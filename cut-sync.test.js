@@ -16,6 +16,17 @@ const mixedClone = [[], -1, /a/gi, 0, Infinity, NaN, new Date("2020"), { a: [{ b
 // const mixedShuffled = shuffle([[], -1, /a/gi, 0, Infinity, NaN, new Date('2020'), { a: [{ b: 1 }] }, 'a', false, null, true, x => x, undefined])
 
 export default [
+  ["Object.keys", user, ["name", "age"]],
+  ["Object.values", user, ["John Doe", 29]],
+  [
+    "Object.entries",
+    user,
+    [
+      ["name", "John Doe"],
+      ["age", 29],
+    ],
+  ],
+  ["Object.fromEntries", Object.entries(user), user],
   ["Object.map", user, (v) => v * 2 || v, { name: "John Doe", age: 58 }],
   ["Object.filter", user, Number, { age: 29 }],
   ["Object.find", user, (v) => v > 10, 29],
@@ -43,11 +54,11 @@ export default [
   ["Object.is", new WeakMap(), WeakMap, true],
   ["Object.is", new WeakSet(), WeakSet, true],
   //? Lodash _.is ignored: Arguments / ArrayLike / ArrayLikeObject / Element / Empty / Equal / EqualWith / Finite / Integer / Length / Match / MatchWith / Native / Nil / ObjectLike / PlainObject / SafeInteger / TypedArray
-  ["Object.is", null, 'Null'],
-  ["Object.is", void 0, 'Undefined'],
-  ["Object.is", undefined, 'Undefined'],
-  ["Object.is", NaN, 'NaN'],
-  ["Object.is", () => 1, 'Function'],
+  ["Object.is", null, "Null"],
+  ["Object.is", void 0, "Undefined"],
+  ["Object.is", undefined, "Undefined"],
+  ["Object.is", NaN, "NaN"],
+  ["Object.is", () => 1, "Function"],
   // { name: "Object.is", fuzz: true, errors: [] },
   ["Object.is", void 0, undefined, true],
   ["Object.is", NaN, Number, true], //! NaN is also a Number
@@ -224,8 +235,14 @@ export default [
   ["Number.duration", 1, "1 millisecond"],
   ["Number.duration", 0, ""],
   ["Date.format", date, "2019-01-20T10:09:08+01:00"],
-  ["Date.format", date, "DD/MM/YYYY hhhmmmsssSSSZ", "20/01/2019 10h09m08s000+01:00"],
+  ["Date.format", date, "YYYY/MM/DD hhhmmmsssSSSZ", "2019/01/20 10h09m08s000+01:00"],
   ["Date.format", date, "QQ WW", "Q1 W3"],
+  ["Date.format", date, "full", "Sunday, January 20, 2019"],
+  ["Date.format", date, "long", "zh", "2019年1月20日"],
+  ["Date.format", date, "medium", "Jan 20, 2019"],
+  ["Date.format", date, "short", "1/20/19"],
+  ["Date.format", date, "long, short", "January 20, 2019 at 10:09 AM"],
+  ["Date.format", date, ", short", "10:09 AM"],
   ["Date.format", date, "day, month, year", "fr", "20 janvier 2019"],
   ["Date.format", date, "month, day, weekday, hour, minute, second", "Sunday, January 20 at 10:09:08 AM"],
   ["Date.format", date, "mon, wday, hour", date.toLocaleString("en", { month: "short", weekday: "short", hour: "2-digit" })],
@@ -234,6 +251,7 @@ export default [
   ["Date.format", date, "minute", "09:08"],
   ["Date.format", date, "second", "08"],
   ["Date.format", new Date("2019-01-01 00:00"), "YYYY-MM-DD hh:mm:ss Z", "2019-01-01 00:00:00 +01:00"],
+  ["Date.format", new Date("Invalid"), "long", "-"],
   ["Date.format", new Date("Invalid"), "mon, wday, hour, minute", "-"],
   ["Date.format", new Date("Invalid"), "YYYY/MM/DD", "-"],
   ["Date.getWeek", new Date("2016-11-05"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month

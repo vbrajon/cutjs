@@ -27,7 +27,7 @@ function object_type(a) {
 function object_is(a, constructor) {
   if (arguments.length === 1) return object_type(a)
   if (!constructor) return a === constructor || isNaN(a) === isNaN(constructor)
-  return a.constructor === constructor
+  return a?.constructor === constructor
 }
 function object_equal(a, b) {
   if (a === b) return true
@@ -243,8 +243,9 @@ function date_getTimezone(date, offset = date.getTimezoneOffset()) {
   return `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`
 }
 function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
-  const parts = format.split(",").map((s) => s.trim())
-  if (!parts.filter((v) => !["year", "month", "mon", "day", "weekday", "wday", "hour", "minute", "second"].includes(v)).length) {
+  const parts = format.split(",").map((v) => v.trim())
+  if (parts.some((v) => ["full", "long", "medium", "short"].includes(v))) return date.toLocaleString(lang, { dateStyle: parts[0] || undefined, timeStyle: parts[1] })
+  if (parts.some((v) => ["year", "month", "mon", "day", "weekday", "wday", "hour", "minute", "second"].includes(v))) {
     const options = {}
     if (parts.includes("second")) options.second = "2-digit"
     if (parts.includes("minute")) options.minute = "2-digit"
@@ -376,12 +377,14 @@ function cut(...args) {
     const shortcut = cut.shortcuts.hasOwnProperty(key) && cut.shortcuts[key]
     const fn = function_decorate(value, shortcut)
     cut[constructor.name][key] = fn
+    cut[key] = (...args) => {
+      if (!cut[args[0]?.constructor.name]?.[key]) return cut[constructor.name][key](...args)
+      return cut[args[0].constructor.name][key](...args)
+    }
+    if (cut.mode === "window") {
+      window[key] = cut[key]
+    }
     if (cut.mode === "prototype") {
-      // Object.defineProperty(constructor, key, {
-      //   writable: true,
-      //   configurable: true,
-      //   value: fn,
-      // })
       try {
         const f = { [key]: function() { return fn(this, ...arguments) } } // prettier-ignore
         Object.defineProperty(constructor.prototype, key, {
@@ -466,7 +469,7 @@ cut("shortcut", "map", {
   before(args) {
     const f = (fn) => {
       if (fn == null) return (x) => x
-      if (fn instanceof Function) return fn
+      if (typeof fn === "function") return fn
       if (fn instanceof Array) return (x) => fn.map((b) => object_access(x, b))
       return (x) => object_access(x, fn)
     }
@@ -478,7 +481,7 @@ cut("shortcut", ["filter", "find", "findIndex"], {
   before(args) {
     const f = (fn) => {
       if (fn == null) return (x) => x
-      if (fn instanceof Function) return fn
+      if (typeof fn === "function") return fn
       if (fn instanceof RegExp) return (x) => fn.test(x)
       if (fn instanceof Array) return (x) => fn.some((v) => f(v)(x))
       if (fn instanceof Object) return (x) => Object.keys(fn).every((k) => f(fn[k])(x[k]))
@@ -510,8 +513,8 @@ cut("shortcut", "sort", {
     function f(fn) {
       if (fn == null) return defaultSort
       if (fn instanceof Array) return multiSort(fn.map(f))
-      if (fn instanceof Function && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
-      if (fn instanceof Function) return fn
+      if (typeof fn === "function" && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
+      if (typeof fn === "function") return fn
       if (typeof fn === "string" && typeof args[0][0] === "string") return Intl.Collator(fn, { numeric: true, ...args[2] }).compare
       return directedSort(fn)
     }
@@ -543,38 +546,37 @@ cut("shortcut", ["sum", "min", "max", "mean", "median"], (fn, arr, ...args) => {
   return fn(arr)
 })
 export default cut
-const fcut = (fname) => (...args) => cut[args[0].constructor.name][fname](...args) // prettier-ignore
-export const map = fcut("map")
-export const reduce = fcut("reduce")
-export const filter = fcut("filter")
-export const find = fcut("find")
-export const findIndex = fcut("findIndex")
-export const sort = fcut("sort")
-export const reverse = fcut("reverse")
-export const group = fcut("group")
-export const unique = fcut("unique")
-export const min = fcut("min")
-export const max = fcut("max")
-export const sum = fcut("sum")
-export const mean = fcut("mean")
-export const median = fcut("median")
-export const decorate = fcut("decorate")
-export const promisify = fcut("promisify")
-export const partial = fcut("partial")
-export const memoize = fcut("memoize")
-export const every = fcut("every")
-export const wait = fcut("wait")
-export const debounce = fcut("debounce")
-export const throttle = fcut("throttle")
-export const lower = fcut("lower")
-export const upper = fcut("upper")
-export const capitalize = fcut("capitalize")
-export const words = fcut("words")
-export const format = fcut("format")
-export const duration = fcut("duration")
-export const modify = fcut("modify")
-export const plus = fcut("plus")
-export const minus = fcut("minus")
-export const start = fcut("start")
-export const end = fcut("end")
-export const escape = fcut("escape")
+export const map = cut.map
+export const reduce = cut.reduce
+export const filter = cut.filter
+export const find = cut.find
+export const findIndex = cut.findIndex
+export const sort = cut.sort
+export const reverse = cut.reverse
+export const group = cut.group
+export const unique = cut.unique
+export const min = cut.min
+export const max = cut.max
+export const sum = cut.sum
+export const mean = cut.mean
+export const median = cut.median
+export const decorate = cut.decorate
+export const promisify = cut.promisify
+export const partial = cut.partial
+export const memoize = cut.memoize
+export const every = cut.every
+export const wait = cut.wait
+export const debounce = cut.debounce
+export const throttle = cut.throttle
+export const lower = cut.lower
+export const upper = cut.upper
+export const capitalize = cut.capitalize
+export const words = cut.words
+export const format = cut.format
+export const duration = cut.duration
+export const modify = cut.modify
+export const plus = cut.plus
+export const minus = cut.minus
+export const start = cut.start
+export const end = cut.end
+export const escape = cut.escape

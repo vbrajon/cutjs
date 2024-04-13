@@ -1,26 +1,37 @@
 <meta charset="utf-8" />
 <link rel="icon" href="data:," />
 <body class="m-10 flex bg-[#0d1116] text-white">
-  <div class="z-10 flex w-40 flex-col overflow-auto">
-    <a class="-mr-px border border-transparent px-2 py-1" href="#">README</a>
+  <div class="z-10 flex w-[200px] flex-col overflow-auto -mr-px">
+    <a class="border border-transparent px-2 py-1" href="#">README</a>
   </div>
-  <div class="editor relative flex-1 overflow-hidden border-[20px] border-[#161b22] bg-[#161b22] font-mono text-sm">
-    <textarea class="absolute h-full w-full resize-none border-none bg-transparent text-transparent caret-[orange] outline-0" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
-    <pre></pre>
+  <div class="editor w-full h-full overflow-auto border-[20px] border-[#161b22] bg-[#161b22]">
+    <div class="grid font-mono text-sm">
+      <pre class="[grid-column:1] [grid-row:1]"></pre>
+      <textarea class="[grid-column:1] [grid-row:1] resize-none border-none bg-transparent text-transparent whitespace-pre caret-[orange] outline-0" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    </div>
   </div>
 </body>
 <script type="module">
   import { codeToHtml } from "https://esm.sh/shiki@1.0.0"
   import cut from "./cut.js"
-  import tests from "./cut-sync.test.js"
-  cut("mode", "prototype")
+  import cutest from "./cutest.js"
+  import tests from "./cut-core.test.js"
+  // cut("mode", "prototype")
+  //? current mode prototype breaks keys, values, but not find in window
+  //? window.keys !== Object.keys
+
+  cut("mode", "window")
+  //! keys, values, find exists in window
+  //! entries, fromEntries does not exists in window
+
   window.cut = cut
+  window.cutest = cutest
   window.tests = tests
   window.$ = (selector, root = document) => root.querySelector(selector)
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
   window.refresh = refresh
   const textarea = $(".editor textarea")
-  const max = (textarea.clientWidth - 40) / 9
+  const maxSize = (textarea.clientWidth - 40) / 9
   textarea.addEventListener("input", refresh)
   addEventListener("hashchange", reload)
   $(".z-10").innerHTML += Object.keys(cut.constructors)
@@ -28,7 +39,7 @@
       Object.keys(cut[cname]).map((fname) => {
         if (fname[0] === "_") return ""
         if (cname === "Number" && Math[fname]) return ""
-        return `<a class="-mr-px border border-transparent px-2 py-1" href="#${cname}.${fname}">${cname}.${fname}</a>`
+        return `<a class="border border-transparent px-2 py-1" href="#${cname}.${fname}">${cname}.${fname}</a>`
       })
     )
     .filter(Boolean)
@@ -54,12 +65,12 @@
     const lines = all.slice(0, i + 1)
     if (!line) return { line }
     const { data, error } = await run(lines.join("\n"))
-    if (!data || line.includes('//')) return { line, data, error }
+    if (data == null || line.includes("//") || /^(const|let|var)/.test(line)) return { line, data, error }
     const str = data instanceof Function ? data.toString() : JSON.stringify(data)
     const com = line + " //= " + str
-    const brk = com.indexOf("\n") === -1 ? max : Math.min(max, com.indexOf("\n"))
-    // console.log(com, brk)
-    if (com.length > brk) return { line, data, error, com: com.slice(0, brk) + "…" }
+    const brk = com.indexOf("\n") === -1 ? maxSize : Math.min(maxSize, com.indexOf("\n"))
+    // console.log(com, brk, com.slice(0, brk) + "…")
+    if (com.length > brk) return { line, data, error, com }
     return { line, data, error, com }
   }
   async function refresh(text) {
@@ -67,14 +78,14 @@
     const info = await Promise.all(textarea.value.split("\n").map(comment))
     const lastInfo = info.findLast((v) => v.hasOwnProperty("error"))
     $(".editor").style = "outline: 1px solid rgb(255 255 255 / 5%);outline-offset: -1px;"
-    if (lastInfo.error) {
-      $(".editor").style = "z-index: 10;outline: 1px solid red;outline-offset: -1px;"
+    if (lastInfo?.error) {
+      $(".editor").style = "outline: 1px solid red;outline-offset: -1px;"
       const errorInfo = info.find((v) => v.error?.message === lastInfo.error.message)
       errorInfo.com = errorInfo.line + " //! " + errorInfo.error.message
     }
     const code = (await info.map((v) => v.com || v.line).join("\n")) + "\n"
     const html = await codeToHtml(code, { lang: "js", theme: "github-dark" })
-    $(".editor pre").outerHTML = html.replace(/style="[^"]*"/, `style="width:100%;height:100%;white-space:pre-wrap;background:#161b22;"`).replace(/tabindex="0"/, "")
+    $(".editor pre").outerHTML = html.replace(/style="[^"]*"/, `style="grid-column:1;grid-row:1;"`).replace(/tabindex="0"/, "")
     $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "red", "=": "orange" }[el.textContent.trim()[2]] || "#6A737D"}`))
   }
   function reload() {
@@ -83,9 +94,19 @@
     links.forEach((el) => (el.style = ""))
     link.style = "border-color: rgb(255 255 255 / 5%);border-right: 0;background: #161b22"
     const [cname, fname] = location.hash.slice(1).split(".")
-    const fn = cut?.[cname]?.[fname]
+    const fn = cut[cname]?.[fname]
     const f = fn?.fn ?? fn
-    if (f) return refresh(f.toString())
+    const str = (v) => {
+      if (typeof v === "function" && v.toString().includes("[native code]")) return v.name
+      if (typeof v === "function") return v.toString()
+      if (v instanceof Date) return `new Date(${JSON.stringify(v)})`
+      return JSON.stringify(v) ?? v?.toString?.() ?? "undefined"
+    }
+    const teststr = tests
+      .filter((t) => t[0] === location.hash.slice(1))
+      .map((t, i) => `${fname}(${t.slice(1, -1).map(str).join(", ")})`) // //= ${JSON.stringify(t.at(-1))}
+      .join("\n\n")
+    if (f) return refresh(teststr)
     return refresh(`const users = [
   { name: "John", age: 25, city: "Paris" },
   { name: "Jane", age: 30, city: "London" },
@@ -108,13 +129,14 @@ users
 <style>
 @import url(https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css);
 /* layer: default */
-.absolute{position:absolute;}
-.relative{position:relative;}
+.\[grid-column\:1\]{grid-column:1;}
+.\[grid-row\:1\]{grid-row:1;}
 .z-10{z-index:10;}
+.grid{display:grid;}
 .m-10{margin:2.5rem;}
 .-mr-px{margin-right:-1px;}
 .h-full{height:100%;}
-.w-40{width:10rem;}
+.w-\[200px\]{width:200px;}
 .w-full{width:100%;}
 .flex{display:flex;}
 .flex-1{flex:1 1 0%;}
@@ -122,6 +144,7 @@ users
 .resize-none{resize:none;}
 .overflow-auto{overflow:auto;}
 .overflow-hidden{overflow:hidden;}
+.whitespace-pre{white-space:pre;}
 .border{border-width:1px;}
 .border-\[20px\]{border-width:20px;}
 .border-\[\#161b22\]{--un-border-opacity:1;border-color:rgb(22 27 34 / var(--un-border-opacity));}
