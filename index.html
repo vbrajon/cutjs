@@ -20,9 +20,11 @@
   //? current mode prototype breaks keys, values, but not find in window
   //? window.keys !== Object.keys
 
-  cut("mode", "window")
+  // cut("mode", "window")
   //! keys, values, find exists in window
   //! entries, fromEntries does not exists in window
+
+  cut("mode", "window+prototype")
 
   window.cut = cut
   window.cutest = cutest

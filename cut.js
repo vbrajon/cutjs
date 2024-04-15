@@ -378,13 +378,13 @@ function cut(...args) {
     const fn = function_decorate(value, shortcut)
     cut[constructor.name][key] = fn
     cut[key] = (...args) => {
-      if (!cut[args[0]?.constructor.name]?.[key]) return cut[constructor.name][key](...args)
+      if (value?.toString()?.includes("[native code]") || !cut[args[0]?.constructor.name]?.[key]) return cut[constructor.name][key](...args)
       return cut[args[0].constructor.name][key](...args)
     }
-    if (cut.mode === "window") {
+    if (cut.mode?.includes("window")) {
       window[key] = cut[key]
     }
-    if (cut.mode === "prototype") {
+    if (cut.mode?.includes("prototype")) {
       try {
         const f = { [key]: function() { return fn(this, ...arguments) } } // prettier-ignore
         Object.defineProperty(constructor.prototype, key, {
