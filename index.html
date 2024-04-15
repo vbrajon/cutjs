@@ -39,7 +39,7 @@
       Object.keys(cut[cname]).map((fname) => {
         if (fname[0] === "_") return ""
         if (cname === "Number" && Math[fname]) return ""
-        return `<a class="border border-transparent px-2 py-1" href="#${cname}.${fname}">${cname}.${fname}</a>`
+        return `<a class="border border-transparent px-2 py-1 ${cname}" href="#${cname}-${fname}">${cname}<span class="text-white">.${fname}</span></a>`
       })
     )
     .filter(Boolean)
@@ -65,12 +65,12 @@
     const lines = all.slice(0, i + 1)
     if (!line) return { line }
     const { data, error } = await run(lines.join("\n"))
-    if (data == null || line.includes("//") || /^(const|let|var)/.test(line)) return { line, data, error }
+    if (data == null || /^(const|let|var)/.test(line)) return { line, data, error }
+    const expected = line.split("//= ")[1]
     const str = data instanceof Function ? data.toString() : JSON.stringify(data)
     const com = line + " //= " + str
-    const brk = com.indexOf("\n") === -1 ? maxSize : Math.min(maxSize, com.indexOf("\n"))
-    // console.log(com, brk, com.slice(0, brk) + "…")
-    if (com.length > brk) return { line, data, error, com }
+    if (expected === str) return { line: line.replace("//=", "//✓"), data, error }
+    if (expected) return { line: line.replace("//=", "//✗"), data, error }
     return { line, data, error, com }
   }
   async function refresh(text) {
@@ -86,14 +86,14 @@
     const code = (await info.map((v) => v.com || v.line).join("\n")) + "\n"
     const html = await codeToHtml(code, { lang: "js", theme: "github-dark" })
     $(".editor pre").outerHTML = html.replace(/style="[^"]*"/, `style="grid-column:1;grid-row:1;"`).replace(/tabindex="0"/, "")
-    $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "red", "=": "orange" }[el.textContent.trim()[2]] || "#6A737D"}`))
+    $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "red", "=": "orange", "✓": "#7d0", "✗": "#f34" }[el.textContent.trim()[2]] || "#6A737D"}`))
   }
   function reload() {
     const links = $$("a[href]")
     const link = links.find((el) => el.getAttribute("href") === location.hash) || links[0]
     links.forEach((el) => (el.style = ""))
-    link.style = "border-color: rgb(255 255 255 / 5%);border-right: 0;background: #161b22"
-    const [cname, fname] = location.hash.slice(1).split(".")
+    link.style = "border-color: rgb(255 255 255 / 5%);border-right: 3px solid currentColor;background: #161b22"
+    const [cname, fname] = location.hash.slice(1).split("-")
     const fn = cut[cname]?.[fname]
     const f = fn?.fn ?? fn
     const str = (v) => {
@@ -103,8 +103,8 @@
       return JSON.stringify(v) ?? v?.toString?.() ?? "undefined"
     }
     const teststr = tests
-      .filter((t) => t[0] === location.hash.slice(1))
-      .map((t, i) => `${fname}(${t.slice(1, -1).map(str).join(", ")})`) // //= ${JSON.stringify(t.at(-1))}
+      .filter((t) => t[0] === `${cname}.${fname}`)
+      .map((t, i) => `${fname}(${t.slice(1, -1).map(str).join(", ")})\n//= ${JSON.stringify(t.at(-1))}`)
       .join("\n\n")
     if (f) return refresh(teststr)
     return refresh(`const users = [
@@ -161,4 +161,12 @@ users
 .font-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
 .caret-\[orange\]{caret-color:orange;}
 .outline-0{outline-width:0px;}
+/* Primitive colors */
+.Object { color: #fd0; }
+.Array { color: #f34; }
+.Function { color: #39f; }
+.String { color: #fa3; }
+.Number { color: #7d0; }
+.Date { color: #f6e; }
+.RegExp { color: #3df; }
 </style>
