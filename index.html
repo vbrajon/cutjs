@@ -114,16 +114,20 @@
   { name: "Jane", age: 30, city: "London" },
   { name: "Jack", age: 20, city: "New York" },
 ]
-users.map("name")
-users.sum("age")
+users.map("name") //= ["John","Jane","Jack"]
+users.sum("age") //= 75
 users
   .group("city")
   .map("[0].name")
   .entries()
   .sum(v => 1)
+  //= 3
   .duration()
-  .format("snake")
+  //= "3 milliseconds"
+  .format("camel")
+  //= "3Milliseconds"
   .is(String)
+  //= true
 `)
   }
 </script>
