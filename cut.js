@@ -47,8 +47,7 @@ function object_access(obj, path) {
   if (path instanceof Object) return object_map(path, (p) => object_access(obj, p))
 }
 function object_traverse(obj, fn, path = []) {
-  if (obj instanceof Array) return obj.map((v, k) => object_traverse(v, fn, path.concat(k)))
-  if (obj instanceof Object) return object_map(obj, (v, k) => object_traverse(v, fn, path.concat(k)))
+  if (obj instanceof Object) return Object.entries(obj).forEach(([k, v]) => object_traverse(v, fn, path.concat(k)))
   return fn(obj, path)
 }
 // Array
@@ -208,7 +207,7 @@ function number_duration(num) {
 function number_format(num, format, options) {
   if (format && typeof format === "string") return Intl.NumberFormat(format, options).format(num)
   if (format && typeof format === "number") return num.toExponential(format - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || ""))
-  return +num.toPrecision(15)
+  return +(+num.toPrecision(15)).toFixed(15)
 }
 // Date
 const UNITS = [
@@ -334,12 +333,13 @@ function cut(...args) {
   if (args[0] === "shortcut") return shortcut(...args)
   return fn(...args)
   function wrap(x) {
-    const cname = x.constructor.name
-    return new Proxy(x, {
+    const cname = x?.constructor.name
+    return new Proxy({ x }, {
       get(target, prop, receiver) {
         if (x.hasOwnProperty(prop)) return x[prop]
+        if (prop === "_") return x
         const f = cut[cname][prop]
-        if (f) return (...args) => f(x, ...args)
+        if (f) return (...args) => wrap(f(x, ...args))
       },
     })
   }

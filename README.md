@@ -84,8 +84,8 @@ bun --watch cutest.js
 
 ## Roadmap
 
-- [ ] Docs interactive: https://raw.githack.com/vbrajon/rawjs/cut/index.html
-- [ ] Test interactive: https://raw.githack.com/vbrajon/rawjs/cut/cutest.html
+- [x] Docs interactive: https://raw.githack.com/vbrajon/rawjs/cut/index.html
+- [x] Test interactive: https://raw.githack.com/vbrajon/rawjs/cut/cutest.html
 - [ ] Typescript
 - [ ] Blog Post
 - [ ] Hacker News / Product Hunt
