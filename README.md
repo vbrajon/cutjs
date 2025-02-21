@@ -79,7 +79,7 @@ matrix.swap()
 ## Development
 
 ```bash
-bun --watch cutest.js
+bun --watch cut.test.js
 ```
 
 ## Roadmap

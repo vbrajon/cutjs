@@ -46,9 +46,14 @@ function object_access(obj, path) {
   if (path instanceof Function) return path(obj)
   if (path instanceof Object) return object_map(path, (p) => object_access(obj, p))
 }
-function object_traverse(obj, fn, path = []) {
-  if (obj instanceof Object) return Object.entries(obj).forEach(([k, v]) => object_traverse(v, fn, path.concat(k)))
-  return fn(obj, path)
+function object_transform(obj, fn) {
+  function inner(o, path) {
+    if (!o || typeof o !== "object") return fn(o, path)
+    const acc = Array.isArray(o) ? [] : {}
+    for (const k in o) acc[k] = inner(o[k], path.concat(k))
+    return acc
+  }
+  return inner(obj, [])
 }
 // Array
 function array_group(arr, keys) {
@@ -180,14 +185,13 @@ function string_words(str, sep = /[-_,.\s]/) {
 }
 function string_format(str, ...args) {
   if (!args.length) args = ["title"]
-  if (["title", "pascal", "camel", "dash", "list", "kebab", "underscore", "snake"].includes(args[0])) {
+  if (["-", "dash"].includes(args[0])) args[0] = "kebab"
+  if (["_", "underscore"].includes(args[0])) args[0] = "snake"
+  if (["title", "pascal", "camel", "kebab", "snake"].includes(args[0])) {
     let tokens = string_words(str.toLowerCase())
-    let sep = " "
     if (args[0] === "camel") return string_format(str, "pascal").replace(/./, (c) => c.toLowerCase())
     if (["title", "pascal"].includes(args[0])) tokens = tokens.map((v) => v.replace(/./, (c) => c.toUpperCase()))
-    if (["pascal"].includes(args[0])) sep = ""
-    if (["dash", "list", "kebab"].includes(args[0])) sep = "-"
-    if (["underscore", "snake"].includes(args[0])) sep = "_"
+    const sep = { kebab: "-", snake: "_", pascal: "" }[args[0]] ?? " "
     return tokens.join(sep)
   }
   let i = 0
@@ -206,7 +210,10 @@ function number_duration(num) {
 }
 function number_format(num, format, options) {
   if (format && typeof format === "string") return Intl.NumberFormat(format, options).format(num)
-  if (format && typeof format === "number") return num.toExponential(format - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || ""))
+  if (format && typeof format === "number")
+    return num
+      .toExponential(format - 1)
+      .replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || ""))
   return +(+num.toPrecision(15)).toFixed(15)
 }
 // Date
@@ -334,14 +341,17 @@ function cut(...args) {
   return fn(...args)
   function wrap(x) {
     const cname = x?.constructor.name
-    return new Proxy({ x }, {
-      get(target, prop, receiver) {
-        if (x.hasOwnProperty(prop)) return x[prop]
-        if (prop === "_") return x
-        const f = cut[cname][prop]
-        if (f) return (...args) => wrap(f(x, ...args))
-      },
-    })
+    return new Proxy(
+      { x },
+      {
+        get(target, prop, receiver) {
+          if (x.hasOwnProperty(prop)) return x[prop]
+          if (prop === "_") return x
+          const f = cut[cname][prop]
+          if (f) return (...args) => wrap(f(x, ...args))
+        },
+      }
+    )
   }
   function mode(_, mode) {
     cut.mode = mode
@@ -412,7 +422,7 @@ cut(Object, "findIndex", object_findIndex)
 cut(Object, "is", object_is)
 cut(Object, "equal", object_equal)
 cut(Object, "access", object_access)
-cut(Object, "traverse", object_traverse)
+cut(Object, "transform", object_transform)
 cut(Array, "map", "native")
 cut(Array, "reduce", "native")
 cut(Array, "filter", "native")

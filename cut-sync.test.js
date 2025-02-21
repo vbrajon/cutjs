@@ -18,14 +18,7 @@ const mixedClone = [[], -1, /a/gi, 0, Infinity, NaN, new Date("2020"), { a: [{ b
 export default [
   ["Object.keys", user, ["name", "age"]],
   ["Object.values", user, ["John Doe", 29]],
-  [
-    "Object.entries",
-    user,
-    [
-      ["name", "John Doe"],
-      ["age", 29],
-    ],
-  ],
+  ["Object.entries", user, [["name", "John Doe"], ["age", 29]]], // prettier-ignore
   ["Object.fromEntries", Object.entries(user), user],
   ["Object.map", user, (v) => v * 2 || v, { name: "John Doe", age: 58 }],
   ["Object.filter", user, Number, { age: 29 }],
@@ -87,11 +80,11 @@ export default [
   ["Object.access", { "a.b": 1 }, undefined, { "a.b": 1 }], // != lodash
   ["Object.access", 1, 1, undefined],
   ["Object.access", undefined],
-  ["Object.traverse", 1, (v) => v * 2, 2], //* works also with primitives
-  ["Object.traverse", [1], (v) => v * 2, [2]], //* equivalent to map when depth = 1
-  ["Object.traverse", { a: 1 }, (v) => v * 2, { a: 2 }], //* equivalent to map when depth = 1
-  ["Object.traverse", { a: 1, b: { c: 2, d: [3] } }, (v) => v * 2, { a: 2, b: { c: 4, d: [6] } }],
-  ["Object.traverse", { a: 1, b: { c: 2, d: [3] } }, (v, path) => `${path.join(".")}=${v}`, { a: "a=1", b: { c: "b.c=2", d: ["b.d.0=3"] } }],
+  ["Object.transform", 1, (v) => v * 2, 2], //* works also with primitives
+  ["Object.transform", [1], (v) => v * 2, [2]], //* equivalent to map when depth = 1
+  ["Object.transform", { a: 1 }, (v) => v * 2, { a: 2 }], //* equivalent to map when depth = 1
+  ["Object.transform", { a: 1, b: { c: 2, d: [3] } }, (v) => v * 2, { a: 2, b: { c: 4, d: [6] } }],
+  ["Object.transform", { a: 1, b: { c: 2, d: [3] } }, (v, path) => `${path.join(".")}=${v}`, { a: "a=1", b: { c: "b.c=2", d: ["b.d.0=3"] } }],
   // Object.difference
   ["Array.map", [null, "a", undefined, /a/], [null, "a", undefined, /a/]],
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], "a", [1, 3]], // prettier-ignore
@@ -120,7 +113,7 @@ export default [
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [0, -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [v => v[0], -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [4, 5], [[null, 1], [1, 2], [null, 3]]], // prettier-ignore
-  ["Array.sort", ["10 arbres", "3 arbres", "réservé", "Cliché", "Premier", "communiqué", "café", "Adieu"], "fr", { numeric: true }, ["3 arbres", "10 arbres", "Adieu", "café", "Cliché", "communiqué", "Premier", "réservé"]],
+  ["Array.sort", ["10 arbres", "3 arbres", "réservé", "Cliché", "Premier", "communiqué", "café", "Adieu"], "fr", { numeric: true }, ["3 arbres", "10 arbres", "Adieu", "café", "Cliché", "communiqué", "Premier", "réservé"]], // prettier-ignore
   ["Array.unique", userAges, [29, 22, 71]],
   ["Array.sum", userAges, 144],
   ["Array.min", userAges, 22],
@@ -204,7 +197,9 @@ export default [
   ["String.upper", "a.b", "A.B"],
   ["String.capitalize", "A.B", "A.b"],
   ["String.words", str, ["i", "am", "The", "1", "AND", "Only"]],
-  ["String.format", str, "I Am The 1 And Only"],
+  ["String.format", str, "I Am The 1 And Only"], // "title" by default
+  ["String.format", str, "-", "i-am-the-1-and-only"], // "dash"
+  ["String.format", str, "_", "i_am_the_1_and_only"], // "underscore"
   ["String.format", str, "title", "I Am The 1 And Only"],
   ["String.format", str, "dash", "i-am-the-1-and-only"],
   ["String.format", str, "underscore", "i_am_the_1_and_only"],
@@ -263,6 +258,8 @@ export default [
   ["Date.format", date, "hour", "10:09:08"],
   ["Date.format", date, "minute", "09:08"],
   ["Date.format", date, "second", "08"],
+  // new Date(8640000000000000).toISOString()
+  // new Date("275760/09/13 02:00:00")
   ["Date.format", new Date("2019-01-01 00:00"), "YYYY-MM-DD hh:mm:ss Z", "2019-01-01 00:00:00 +01:00"],
   ["Date.format", new Date("Invalid"), "long", "-"],
   ["Date.format", new Date("Invalid"), "mon, wday, hour, minute", "-"],
@@ -314,6 +311,7 @@ export default [
   ["Date.minus", new Date("2020-02-29"), "1 year", new Date("2019-02-28")],
   ["Date.minus", new Date("2018-11-30"), "-3 month", new Date("2019-02-28")], //* Subtract negative number
   ["Date.start", new Date("2018-02-28T04:05:00"), "month", new Date("2018-02-01T00:00:00")],
+  // ["Date.start", new Date("2018-02-28T04:05:00"), "week", new Date("2018-02-01T00:00:00")], // NOTE: start on sunday or monday
   ["Date.end", new Date("2016-02-29T10:11:12"), "year", new Date("2016-12-31T23:59:59")],
   ["Date.relative", date, date, ""],
   ["Date.relative", new Date(+date - 1000), date, "1 second ago"], //* 1 second before
