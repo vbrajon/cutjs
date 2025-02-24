@@ -1,3 +1,39 @@
+// Generic
+function type(a) {
+  if (!a) return Number.isNaN(a) ? "NaN" : Object.prototype.toString.call(a).slice(8, -1)
+  return a.constructor.name
+}
+function is(a, constructor) {
+  if (arguments.length === 1) return type(a)
+  if (!constructor) return a === constructor || isNaN(a) === isNaN(constructor)
+  return a?.constructor === constructor
+}
+function equal(a, b) {
+  if (a === b) return true
+  if (a == null || b == null) return false
+  if (a.constructor !== b.constructor) return false
+  if (![Object, Array].includes(a.constructor)) return a.toString() === b.toString()
+  if (Object.keys(a).length !== Object.keys(b).length) return false
+  return Object.keys(a).every((k) => equal(a[k], b[k]))
+}
+const dotpath = function_memoize((str) => str.split(/(?:\.|\[["']?([^\]"']*)["']?\])/).filter((x) => x))
+function access(obj, path) {
+  if (obj == null || path == null) return obj
+  if (Object.prototype.hasOwnProperty.call(obj, path)) return obj[path]
+  if (typeof path === "string") return access(obj, dotpath(path))
+  if (path instanceof Function) return path(obj)
+  if (path instanceof Array) return path.reduce((a, p) => (a && a[p] != null ? a[p] : undefined), obj)
+  if (path instanceof Object) return Object.entries(path).reduce((a, [k, v]) => ((a[k] = access(obj, v)), a), {})
+}
+function transform(obj, fn) {
+  function inner(o, path) {
+    if (!o || typeof o !== "object") return fn(o, path)
+    const acc = Array.isArray(o) ? [] : {}
+    for (const k in o) acc[k] = inner(o[k], path.concat(k))
+    return acc
+  }
+  return inner(obj, [])
+}
 // Object
 function object_map(obj, fn) {
   return Object.keys(obj).reduce((acc, k, i) => {
@@ -20,46 +56,11 @@ function object_find(obj, fn) {
 function object_findIndex(obj, fn) {
   return Object.keys(obj).find((k, i) => fn(obj[k], k, i, obj))
 }
-function object_type(a) {
-  if (!a) return Number.isNaN(a) ? "NaN" : Object.prototype.toString.call(a).slice(8, -1)
-  return a.constructor.name
-}
-function object_is(a, constructor) {
-  if (arguments.length === 1) return object_type(a)
-  if (!constructor) return a === constructor || isNaN(a) === isNaN(constructor)
-  return a?.constructor === constructor
-}
-function object_equal(a, b) {
-  if (a === b) return true
-  if (a == null || b == null) return false
-  if (a.constructor !== b.constructor) return false
-  if (![Object, Array].includes(a.constructor)) return a.toString() === b.toString()
-  if (Object.keys(a).length !== Object.keys(b).length) return false
-  return Object.keys(a).every((k) => object_equal(a[k], b[k]))
-}
-const dotpath = function_memoize((str) => str.split(/(?:\.|\[["']?([^\]"']*)["']?\])/).filter((x) => x))
-function object_access(obj, path) {
-  if (obj == null || path == null) return obj
-  if (Object.prototype.hasOwnProperty.call(obj, path)) return obj[path]
-  if (typeof path === "string") return object_access(obj, dotpath(path))
-  if (path instanceof Array) return path.reduce((a, p) => (a && a[p] != null ? a[p] : undefined), obj)
-  if (path instanceof Function) return path(obj)
-  if (path instanceof Object) return object_map(path, (p) => object_access(obj, p))
-}
-function object_transform(obj, fn) {
-  function inner(o, path) {
-    if (!o || typeof o !== "object") return fn(o, path)
-    const acc = Array.isArray(o) ? [] : {}
-    for (const k in o) acc[k] = inner(o[k], path.concat(k))
-    return acc
-  }
-  return inner(obj, [])
-}
 // Array
 function array_group(arr, keys) {
   return arr.reduce((acc, v) => {
     keys.reduce((acc, k, i) => {
-      const key = object_access(v, k)
+      const key = access(v, k)
       const last = i === keys.length - 1
       const hasKey = Object.prototype.hasOwnProperty.call(acc, key)
       if (last) return (acc[key] = hasKey ? acc[key].concat([v]) : [v])
@@ -69,7 +70,7 @@ function array_group(arr, keys) {
   }, {})
 }
 function array_unique(arr) {
-  return Array.from(new Set(arr))
+  return [...new Set(arr)]
 }
 function array_min(arr) {
   return Math.min(...arr)
@@ -196,8 +197,8 @@ function string_format(str, ...args) {
   }
   let i = 0
   let fn
-  fn = (m) => object_access(args, m)
-  if (typeof args[0] === "object") fn = (m) => object_access(args[0], m)
+  fn = (m) => access(args, m)
+  if (typeof args[0] === "object") fn = (m) => access(args[0], m)
   if (typeof args[0] === "function") fn = args.shift()
   return str.replace(/\{[^{}]*\}/g, (m) => String(fn(m.slice(1, -1) || i, i++)).replace(/^(null|undefined)$/, ""))
 }
@@ -367,6 +368,7 @@ function cut(...args) {
     mode(_, cut.mode)
   }
   function fn(constructor, key, value) {
+    if (!constructor) constructor = { name: "Generic", prototype: Object.prototype }
     if (key.startsWith("_")) return
     cut.constructors[constructor.name] = constructor
     cut[constructor.name] = cut[constructor.name] || {}
@@ -392,11 +394,13 @@ function cut(...args) {
       return cut[args[0].constructor.name][key](...args)
     }
     if (cut.mode?.includes("window")) {
+      window.cut = cut
       window[key] = cut[key]
     }
     if (cut.mode?.includes("prototype")) {
       try {
-        const f = { [key]: function() { return fn(this, ...arguments) } } // prettier-ignore
+        let f = { [key]: function() { return fn(this, ...arguments) } } // prettier-ignore
+        if (constructor.name === "Generic") f = { [key]: function() { return this === cut[arguments?.[0]?.constructor.name] ? fn(...arguments) : fn(this, ...arguments)} } // prettier-ignore
         Object.defineProperty(constructor.prototype, key, {
           writable: true,
           configurable: true,
@@ -410,6 +414,10 @@ function cut(...args) {
 }
 cut.constructors = {}
 cut.shortcuts = {}
+cut(null, "is", is)
+cut(null, "equal", equal)
+cut(null, "access", access)
+cut(null, "transform", transform)
 cut(Object, "keys", "native")
 cut(Object, "values", "native")
 cut(Object, "entries", "native")
@@ -419,10 +427,6 @@ cut(Object, "reduce", object_reduce)
 cut(Object, "filter", object_filter)
 cut(Object, "find", object_find)
 cut(Object, "findIndex", object_findIndex)
-cut(Object, "is", object_is)
-cut(Object, "equal", object_equal)
-cut(Object, "access", object_access)
-cut(Object, "transform", object_transform)
 cut(Array, "map", "native")
 cut(Array, "reduce", "native")
 cut(Array, "filter", "native")
@@ -452,9 +456,9 @@ cut(String, "words", string_words)
 cut(String, "format", string_format)
 cut(Number, "duration", number_duration)
 cut(Number, "format", number_format)
-Object.getOwnPropertyNames(Math)
-  .filter((k) => typeof Math[k] === "function")
-  .forEach((k) => cut(Number, k, Math[k]))
+// Object.getOwnPropertyNames(Math)
+//   .filter((k) => typeof Math[k] === "function")
+//   .forEach((k) => cut(Number, k, Math[k]))
 cut(Date, "relative", date_relative)
 cut(Date, "getWeek", date_getWeek)
 cut(Date, "getQuarter", date_getQuarter)
@@ -480,8 +484,8 @@ cut("shortcut", "map", {
     const f = (fn) => {
       if (fn == null) return (x) => x
       if (typeof fn === "function") return fn
-      if (fn instanceof Array) return (x) => fn.map((b) => object_access(x, b))
-      return (x) => object_access(x, fn)
+      if (fn instanceof Array) return (x) => fn.map((b) => access(x, b))
+      return (x) => access(x, fn)
     }
     args[1] = f(args[1])
     return args
@@ -495,7 +499,7 @@ cut("shortcut", ["filter", "find", "findIndex"], {
       if (fn instanceof RegExp) return (x) => fn.test(x)
       if (fn instanceof Array) return (x) => fn.some((v) => f(v)(x))
       if (fn instanceof Object) return (x) => Object.keys(fn).every((k) => f(fn[k])(x[k]))
-      return (x) => object_equal(x, fn) || object_access(x, fn)
+      return (x) => equal(x, fn) || access(x, fn)
     }
     args[1] = f(args[1])
     return args
@@ -510,7 +514,7 @@ cut("shortcut", "sort", {
     }
     function directedSort(p, desc = /^-/.test(p)) {
       p = ("" + p).replace(/^[+-]/, "")
-      return (a, b) => defaultSort(object_access(a, p), object_access(b, p)) * +(!desc || -1)
+      return (a, b) => defaultSort(access(a, p), access(b, p)) * +(!desc || -1)
     }
     function multiSort(fns) {
       return (a, b) => {
@@ -590,3 +594,4 @@ export const minus = cut.minus
 export const start = cut.start
 export const end = cut.end
 export const escape = cut.escape
+if (import.meta.url.includes("?")) cut("mode", import.meta.url.split("?")[1])

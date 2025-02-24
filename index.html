@@ -1,5 +1,5 @@
-<meta charset="utf-8" />
-<link rel="icon" href="data:," />
+<title>CutJS</title>
+<link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='100'>✂️</text></svg>" />
 <body class="m-10 flex bg-[#0d1116] text-white">
   <div class="z-10 flex w-[200px] flex-col overflow-auto -mr-px">
     <a class="border border-transparent px-2 py-1" href="#">README</a>
@@ -7,82 +7,66 @@
   <div class="editor w-full h-full overflow-auto border-[20px] border-[#161b22] bg-[#161b22]">
     <div class="grid font-mono text-sm">
       <pre class="[grid-column:1] [grid-row:1]"></pre>
-      <textarea class="[grid-column:1] [grid-row:1] resize-none border-none bg-transparent text-transparent whitespace-pre caret-[orange] outline-0" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      <textarea
+        class="[grid-column:1] [grid-row:1] resize-none border-none bg-transparent text-transparent whitespace-pre caret-[orange] outline-0"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      ></textarea>
     </div>
   </div>
 </body>
 <script type="module">
   import { codeToHtml } from "https://esm.sh/shiki@1.0.0"
-  import cut from "./cut.js"
-  import cutest from "./cutest.js"
+  import cut from "./cut.js?window+prototype"
   import tests from "./cut-core.test.js"
-  // cut("mode", "prototype")
-  //? current mode prototype breaks keys, values, but not find in window
-  //? window.keys !== Object.keys
-
-  // cut("mode", "window")
-  //! keys, values, find exists in window
-  //! entries, fromEntries does not exists in window
-
-  cut("mode", "window+prototype")
-
-  window.cut = cut
-  window.cutest = cutest
-  window.tests = tests
+  // import cutest from "./cutest.js"
+  // await cutest("cut-core.test.js") // TODO: make this work when raun twice
+  // window.cutest = cutest
+  // window.tests = tests
+  // window.refresh = refresh
   window.$ = (selector, root = document) => root.querySelector(selector)
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
-  window.refresh = refresh
+  window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const README = await fetch("README.md").then((res) => res.text())
+  const EXEMPLE = /```js([\s\S]*?)```/.exec(README)[1].trim().replace(/.*\n/, "") + "\n"
   const textarea = $(".editor textarea")
   const maxSize = (textarea.clientWidth - 40) / 9
   textarea.addEventListener("input", refresh)
   addEventListener("hashchange", reload)
   $(".z-10").innerHTML += Object.keys(cut.constructors)
-    .flatMap((cname) =>
-      Object.keys(cut[cname]).map((fname) => {
-        if (fname[0] === "_") return ""
-        if (cname === "Number" && Math[fname]) return ""
-        return `<a class="border border-transparent px-2 py-1 ${cname}" href="#${cname}-${fname}">${cname}<span class="text-white">.${fname}</span></a>`
-      })
-    )
-    .filter(Boolean)
+    .map((cname) => `<a class="border border-transparent px-2 py-1 ${cname}" href="#${cname}">${cname}</a>`)
     .join("\n")
   reload()
   async function run(code) {
     try {
       if (!code.includes("await")) return { data: await eval(`${code}`) }
-      const lines = code.split("\n")
-      const wordLineIndex = lines
-        .slice()
-        .reverse()
-        .findIndex((l) => /^\s*[a-z]/.test(l))
-      const index = wordLineIndex === -1 ? 0 : lines.length - wordLineIndex - 1
-      lines[index] = "return " + lines[index]
-      code = lines.join("\n")
-      return { data: await eval(`(async () => {${code}})()`) }
+      return { data: await eval(`(async () => {\n${code.replace(/(.*)$/, (m) => "return " + m)}\n})()`) }
     } catch (error) {
       return { error }
     }
   }
   async function comment(line, i, all) {
     const lines = all.slice(0, i + 1)
-    if (!line) return { line }
+    if (!line || line.startsWith("//")) return { line }
     const { data, error } = await run(lines.join("\n"))
-    if (data == null || /^(const|let|var)/.test(line)) return { line, data, error }
     const expected = line.split("//= ")[1]
-    const str = data instanceof Function ? data.toString() : JSON.stringify(data)
-    const com = line + " //= " + str
+    const str = data instanceof Function ? data.toString() : stringify(data)
+    const com = line + " //> " + str
     if (expected === str) return { line: line.replace("//=", "//✓"), data, error }
     if (expected) return { line: line.replace("//=", "//✗"), data, error }
+    if (data == null || line.includes("//")) return { line, data, error }
     return { line, data, error, com }
   }
   async function refresh(text) {
     if (typeof text === "string") textarea.value = text
     const info = await Promise.all(textarea.value.split("\n").map(comment))
-    const lastInfo = info.findLast((v) => v.hasOwnProperty("error"))
+    const error = info.findLast((v) => v.hasOwnProperty("error"))
     $(".editor").style = "outline: 1px solid rgb(255 255 255 / 5%);outline-offset: -1px;"
-    if (lastInfo?.error) {
+    if (error?.error) {
       $(".editor").style = "outline: 1px solid red;outline-offset: -1px;"
-      const errorInfo = info.find((v) => v.error?.message === lastInfo.error.message)
+      const errorInfo = info.find((v) => v.error?.message === error.error.message)
       errorInfo.com = errorInfo.line + " //! " + errorInfo.error.message
     }
     const code = (await info.map((v) => v.com || v.line).join("\n")) + "\n"
@@ -95,42 +79,46 @@
     const link = links.find((el) => el.getAttribute("href") === location.hash) || links[0]
     links.forEach((el) => (el.style = ""))
     link.style = "border-color: rgb(255 255 255 / 5%);border-right: 3px solid currentColor;background: #161b22"
-    const [cname, fname] = location.hash.slice(1).split("-")
-    const fn = cut[cname]?.[fname]
-    const f = fn?.fn ?? fn
-    const str = (v) => {
-      if (typeof v === "function" && v.toString().includes("[native code]")) return v.name
-      if (typeof v === "function") return v.toString()
-      if (v instanceof Date) return `new Date(${JSON.stringify(v)})`
-      return JSON.stringify(v) ?? v?.toString?.() ?? "undefined"
-    }
+    const cname = location.hash.slice(1)
+    const testfn = tests
+      .filter((t) => t.name && t.name.split(".")[0] === cname)
+      .map((t, i) => `const fn${i} = ${t.fn.toString()}\nawait fn${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
+      .join("\n")
+    if (testfn) return refresh(testfn)
     const teststr = tests
-      .filter((t) => t[0] === `${cname}.${fname}`)
-      .map((t, i) => `${fname}(${t.slice(1, -1).map(str).join(", ")})\n//= ${JSON.stringify(t.at(-1))}`)
-      .join("\n\n")
-    if (f) return refresh(teststr)
-    return refresh(`const users = [
-  { name: "John", age: 25, city: "Paris" },
-  { name: "Jane", age: 30, city: "London" },
-  { name: "Jack", age: 20, city: "New York" },
-]
-users.map("name") //= ["John","Jane","Jack"]
-users.sum("age") //= 75
-users
-  .group("city")
-  .map("[0].name")
-  .entries()
-  .sum(v => 1)
-  //= 3
-  .duration()
-  //= "3 milliseconds"
-  .format("camel")
-  //= "3Milliseconds"
-  .is(String)
-  //= true
-`)
+      .filter((t) => t[0] && t[0].split(".")[0] === cname)
+      .map((t, i) => `${t[0].split(".")[1]}(${t.slice(1, -1).map(stringify).join(", ")}) //= ${stringify(t.at(-1))}`)
+      .join("\n")
+    if (teststr) return refresh(teststr)
+    return refresh(EXEMPLE)
+  }
+  function stringify(v) {
+    if (v === undefined) return "undefined"
+    if (v === null) return "null"
+    if (typeof v === "string") return JSON.stringify(v)
+    if (typeof v === "number" || typeof v === "boolean") return String(v)
+    if (v instanceof Date) {
+      try {
+        return `new Date("${v.toISOString()}")`
+      } catch (error) {
+        return `new Date("Invalid Date")`
+      }
+    }
+    if (v instanceof RegExp) return v.toString()
+    for (const constructor of [Array, Boolean, Date, Error, Function, Number, Object, RegExp, String, Symbol]) {
+      if (v === constructor) return `${constructor.name}`
+    }
+    for (const constructor of [ArrayBuffer, Date, Error, Map, Set, WeakMap, WeakSet]) {
+      if (v instanceof constructor) return `new ${constructor.name}()`
+      if (v === constructor) return `${constructor.name}`
+    }
+    if (v instanceof Function) return v.toString()
+    if (v instanceof Array) return `[${v.map(stringify).join(",")}]`
+    if (v instanceof Object) return `{${Object.entries(v).map(([k, v]) => `${JSON.stringify(k)}:${stringify(v)}`).join(",")}}` // prettier-ignore
+    return String(v)
   }
 </script>
+<!-- <script src="https://unpkg.com/@tailwindcss/browser@4"></script> -->
 <!-- prettier-ignore -->
 <style>
 @import url(https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css);
@@ -168,6 +156,7 @@ users
 .caret-\[orange\]{caret-color:orange;}
 .outline-0{outline-width:0px;}
 /* Primitive colors */
+.Generic { color: #789; }
 .Object { color: #fd0; }
 .Array { color: #f34; }
 .Function { color: #39f; }

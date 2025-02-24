@@ -17,16 +17,19 @@
 ## Example
 
 ```js
-import { map, sum, group } from "cut"
+import "cut?window+prototype"
 const users = [
   { name: "John", age: 25, city: "Paris" },
   { name: "Jane", age: 30, city: "London" },
-  { name: "Jack", age: 20, city: "New York" },
+  { name: "Jack", age: 14, city: "New York" },
 ]
-const names = map(users, "name") // ["John", "Jane", "Jack"]
-const ageSum = sum(users, "age") // 75
-const byCity = group(users, "city") // { Paris: [John], London: [Jane], New York: [Jack] }
-const populationByCity = map(byCity, "length") // { Paris: 1, London: 1, New York: 1 }
+users //
+  .group("city") // {"Paris":[{name:"John",age:25,city:"Paris"}],...}
+  .map(g => g.sum("age")) //= {"Paris":25,"London":30,"New York":14}
+  .values() //= [25,30,14]
+  .mean() //= 23
+  .transform(v => v * 100 + 0.01234) //= 2300.01234
+  .format("en") //= "2,300.012"
 ```
 
 and extend with your own functions or shortcuts:
@@ -62,19 +65,18 @@ matrix.swap()
 | ------------- | ----------- | --------- | ---------- | -------- | ----------- | ------ |
 | _keys_        | _map_       | decorate  | lower      | duration | relative    | escape |
 | _values_      | _reduce_    | promisify | upper      | format   | getWeek     | plus   |
-| _entries_     | _filter_    | partial   | capitalize | abs      | getQuarter  | minus  |
-| _fromEntries_ | _find_      | memoize   | words      | acos     | getLastDate |        |
-| map           | _findIndex_ | every     | format     | asin     | getTimezone |        |
-| reduce        | _sort_      | wait      |            | atan     | format      |        |
-| filter        | _reverse_   | debounce  |            | acosh    | modify      |        |
-| find          | group       | throttle  |            | asinh    | plus        |        |
-| findIndex     | unique      |           |            | atanh    | minus       |        |
-| access        | min         |           |            | atan2    | start       |        |
-| equal         | max         |           |            | cbrt     | end         |        |
-| traverse      | sum         |           |            | ceil     |             |        |
-|               | mean        |           |            | clz32    |             |        |
-|               | median      |           |            | cos      |             |        |
-|               |             |           |            | …        |             |        |
+| _entries_     | _filter_    | partial   | capitalize |          | getQuarter  | minus  |
+| _fromEntries_ | _find_      | memoize   | words      |          | getLastDate |        |
+| map           | _findIndex_ | every     | format     |          | getTimezone |        |
+| reduce        | _sort_      | wait      |            |          | format      |        |
+| filter        | _reverse_   | debounce  |            |          | modify      |        |
+| find          | group       | throttle  |            |          | plus        |        |
+| findIndex     | unique      |           |            |          | minus       |        |
+| access        | min         |           |            |          | start       |        |
+| equal         | max         |           |            |          | end         |        |
+| transform     | sum         |           |            |          |             |        |
+|               | mean        |           |            |          |             |        |
+|               | median      |           |            |          |             |        |
 
 ## Development
 
@@ -87,7 +89,6 @@ bun --watch cut.test.js
 - [x] Docs interactive: https://raw.githack.com/vbrajon/rawjs/cut/index.html
 - [x] Test interactive: https://raw.githack.com/vbrajon/rawjs/cut/cutest.html
 - [ ] Typescript
-- [ ] Blog Post
-- [ ] Hacker News / Product Hunt
+- [ ] Blog Post / Hacker News / Product Hunt
 - [ ] Every Array Fn
 - [ ] Async/Iterator/Generator

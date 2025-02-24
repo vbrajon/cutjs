@@ -16,6 +16,67 @@ const mixedClone = [[], -1, /a/gi, 0, Infinity, NaN, new Date("2020"), { a: [{ b
 // const mixedShuffled = shuffle([[], -1, /a/gi, 0, Infinity, NaN, new Date('2020'), { a: [{ b: 1 }] }, 'a', false, null, true, x => x, undefined])
 
 export default [
+  //? Lodash _.is
+  ["Generic.is", [1], Array, true],
+  ["Generic.is", new ArrayBuffer(1), ArrayBuffer, true],
+  ["Generic.is", true, Boolean, true],
+  // ["Generic.is", new Buffer(1), Buffer, true],
+  ["Generic.is", new Date(), Date, true],
+  ["Generic.is", new Error(), Error, true],
+  ["Generic.is", () => 1, Function, true],
+  ["Generic.is", new Map(), Map, true],
+  ["Generic.is", NaN, NaN, true],
+  ["Generic.is", null, null, true],
+  ["Generic.is", 1, Number, true],
+  ["Generic.is", {}, Object, true],
+  ["Generic.is", /1/, RegExp, true],
+  ["Generic.is", new Set(), Set, true],
+  ["Generic.is", "str", String, true],
+  ["Generic.is", Symbol(1), Symbol, true],
+  ["Generic.is", undefined, undefined, true],
+  ["Generic.is", new WeakMap(), WeakMap, true],
+  ["Generic.is", new WeakSet(), WeakSet, true],
+  //? Lodash _.is ignored: Arguments / ArrayLike / ArrayLikeObject / Element / Empty / Equal / EqualWith / Finite / Integer / Length / Match / MatchWith / Native / Nil / ObjectLike / PlainObject / SafeInteger / TypedArray
+  ["Generic.is", null, "Null"],
+  ["Generic.is", void 0, "Undefined"],
+  ["Generic.is", undefined, "Undefined"],
+  ["Generic.is", NaN, "NaN"],
+  ["Generic.is", () => 1, "Function"],
+  // { name: "Generic.is", fuzz: true, errors: [] },
+  ["Generic.is", void 0, undefined, true],
+  ["Generic.is", NaN, Number, true], //! NaN is also a Number
+  ["Generic.is", 1, NaN, false],
+  //? Lodash _.isEqual
+  ["Generic.equal", [null, null], [null, undefined], false],
+  ["Generic.equal", { a: 1 }, { a: 1 }, true],
+  ["Generic.equal", { a: 1 }, { a: 1, b: 2 }, false],
+  ["Generic.equal", mixed, mixedClone, true],
+  ["Generic.equal", (x) => x, (x) => x, true], // != lodash
+  ["Generic.equal", null, null, true],
+  ["Generic.equal", true],
+  ["Generic.access", { a: { b: [1, 2, 3] } }, ["a", "b", "length"], 3],
+  ["Generic.access", { a: { b: [1, 2, 3] } }, "a.b.length", 3],
+  ["Generic.access", { a: { b: [1, 2, 3] } }, ".a.b.length", 3], // != lodash
+  ["Generic.access", { a: { b: [1, 2, 3] } }, '["a"]["b"].length', 3],
+  ["Generic.access", { a: { b: [1, 2, 3] } }, { a: "a.b", b: "a.b.length" }, { a: [1, 2, 3], b: 3 }], // != lodash
+  ["Generic.access", [{ a: { b: [1, 2, 3] } }], "0.a.b.length", 3],
+  ["Generic.access", { a: { "b.c": 1 } }, 'a["b.c"]', 1],
+  ["Generic.access", { a: { b: 1 } }, "a.b", 1],
+  ["Generic.access", { a: { b: 1 } }, ["a", "b"], 1],
+  ["Generic.access", { "a.b": 1 }, "a.b", 1],
+  ["Generic.access", { "a.b": 1 }, ["a", "b"], undefined],
+  ["Generic.access", { "a.b": 1 }, { "a.b": 1 }], // != lodash
+  ["Generic.access", { "a.b": 1 }, null, { "a.b": 1 }], // != lodash
+  ["Generic.access", { "a.b": 1 }, undefined, { "a.b": 1 }], // != lodash
+  ["Generic.access", 1, 1, undefined],
+  ["Generic.access", undefined],
+  ["Generic.transform", 1, (v) => v * 2, 2], //* works also with primitives
+  ["Generic.transform", [1], (v) => v * 2, [2]], //* equivalent to map when depth = 1
+  ["Generic.transform", { a: 1 }, (v) => v * 2, { a: 2 }], //* equivalent to map when depth = 1
+  ["Generic.transform", { a: 1, b: { c: 2, d: [3] } }, (v) => v * 2, { a: 2, b: { c: 4, d: [6] } }],
+  ["Generic.transform", { a: 1, b: { c: 2, d: [3] } }, (v, path) => `${path.join(".")}=${v}`, { a: "a=1", b: { c: "b.c=2", d: ["b.d.0=3"] } }],
+  // Object.difference
+
   ["Object.keys", user, ["name", "age"]],
   ["Object.values", user, ["John Doe", 29]],
   ["Object.entries", user, [["name", "John Doe"], ["age", 29]]], // prettier-ignore
@@ -26,66 +87,6 @@ export default [
   ["Object.findIndex", user, (v) => v === 29, "age"],
   ["Object.reduce", user, (acc, v, k) => ((acc[v] = k), acc), {}, { "John Doe": "name", 29: "age" }],
   ["Object.reduce", user, (acc, v, k) => Object.assign(acc, { [v]: k }), {}, { "John Doe": "name", 29: "age" }], //* compare performance
-  //? Lodash _.is
-  ["Object.is", [1], Array, true],
-  ["Object.is", new ArrayBuffer(1), ArrayBuffer, true],
-  ["Object.is", true, Boolean, true],
-  // ["Object.is", new Buffer(1), Buffer, true],
-  ["Object.is", new Date(), Date, true],
-  ["Object.is", new Error(), Error, true],
-  ["Object.is", () => 1, Function, true],
-  ["Object.is", new Map(), Map, true],
-  ["Object.is", NaN, NaN, true],
-  ["Object.is", null, null, true],
-  ["Object.is", 1, Number, true],
-  ["Object.is", {}, Object, true],
-  ["Object.is", /1/, RegExp, true],
-  ["Object.is", new Set(), Set, true],
-  ["Object.is", "str", String, true],
-  ["Object.is", Symbol(1), Symbol, true],
-  ["Object.is", undefined, undefined, true],
-  ["Object.is", new WeakMap(), WeakMap, true],
-  ["Object.is", new WeakSet(), WeakSet, true],
-  //? Lodash _.is ignored: Arguments / ArrayLike / ArrayLikeObject / Element / Empty / Equal / EqualWith / Finite / Integer / Length / Match / MatchWith / Native / Nil / ObjectLike / PlainObject / SafeInteger / TypedArray
-  ["Object.is", null, "Null"],
-  ["Object.is", void 0, "Undefined"],
-  ["Object.is", undefined, "Undefined"],
-  ["Object.is", NaN, "NaN"],
-  ["Object.is", () => 1, "Function"],
-  // { name: "Object.is", fuzz: true, errors: [] },
-  ["Object.is", void 0, undefined, true],
-  ["Object.is", NaN, Number, true], //! NaN is also a Number
-  ["Object.is", 1, NaN, false],
-  //? Lodash _.isEqual
-  ["Object.equal", [null, null], [null, undefined], false],
-  ["Object.equal", { a: 1 }, { a: 1 }, true],
-  ["Object.equal", { a: 1 }, { a: 1, b: 2 }, false],
-  ["Object.equal", mixed, mixedClone, true],
-  ["Object.equal", (x) => x, (x) => x, true], // != lodash
-  ["Object.equal", null, null, true],
-  ["Object.equal", true],
-  ["Object.access", { a: { b: [1, 2, 3] } }, ["a", "b", "length"], 3],
-  ["Object.access", { a: { b: [1, 2, 3] } }, "a.b.length", 3],
-  ["Object.access", { a: { b: [1, 2, 3] } }, ".a.b.length", 3], // != lodash
-  ["Object.access", { a: { b: [1, 2, 3] } }, '["a"]["b"].length', 3],
-  ["Object.access", { a: { b: [1, 2, 3] } }, { a: "a.b", b: "a.b.length" }, { a: [1, 2, 3], b: 3 }], // != lodash
-  ["Object.access", [{ a: { b: [1, 2, 3] } }], "0.a.b.length", 3],
-  ["Object.access", { a: { "b.c": 1 } }, 'a["b.c"]', 1],
-  ["Object.access", { a: { b: 1 } }, "a.b", 1],
-  ["Object.access", { a: { b: 1 } }, ["a", "b"], 1],
-  ["Object.access", { "a.b": 1 }, "a.b", 1],
-  ["Object.access", { "a.b": 1 }, ["a", "b"], undefined],
-  ["Object.access", { "a.b": 1 }, { "a.b": 1 }], // != lodash
-  ["Object.access", { "a.b": 1 }, null, { "a.b": 1 }], // != lodash
-  ["Object.access", { "a.b": 1 }, undefined, { "a.b": 1 }], // != lodash
-  ["Object.access", 1, 1, undefined],
-  ["Object.access", undefined],
-  ["Object.transform", 1, (v) => v * 2, 2], //* works also with primitives
-  ["Object.transform", [1], (v) => v * 2, [2]], //* equivalent to map when depth = 1
-  ["Object.transform", { a: 1 }, (v) => v * 2, { a: 2 }], //* equivalent to map when depth = 1
-  ["Object.transform", { a: 1, b: { c: 2, d: [3] } }, (v) => v * 2, { a: 2, b: { c: 4, d: [6] } }],
-  ["Object.transform", { a: 1, b: { c: 2, d: [3] } }, (v, path) => `${path.join(".")}=${v}`, { a: "a=1", b: { c: "b.c=2", d: ["b.d.0=3"] } }],
-  // Object.difference
   ["Array.map", [null, "a", undefined, /a/], [null, "a", undefined, /a/]],
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], "a", [1, 3]], // prettier-ignore
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], ["a", "b"], [[1, 2], [3, 4]]], // prettier-ignore
@@ -128,11 +129,7 @@ export default [
   },
   {
     name: "Function.decorate",
-    fn: (fn) =>
-      fn(
-        (x) => x,
-        () => 2
-      )(1),
+    fn: (fn) => fn((x) => x, () => 2)(1), // prettier-ignore
     output: 2,
   },
   {
@@ -285,6 +282,7 @@ export default [
   ["Date.getWeek", new Date("2004-12-31"), 53], // Friday, Leep year
   ["Date.getWeek", new Date("2005-01-01"), 53], // Saturday
   ["Date.getWeek", new Date("2006-01-01"), 52], // Sunday
+  ["Date.getLastDate", new Date("2000-02-01"), 29],
   ["Date.getQuarter", new Date("2018-04-01"), 2],
   ["Date.getTimezone", new Date(), -540, "+09:00"],
   ["Date.getTimezone", new Date(), +240, "-04:00"],

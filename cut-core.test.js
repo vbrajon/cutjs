@@ -1,15 +1,11 @@
-import testsAsync from "./cut-async.test.js"
 import testsSync from "./cut-sync.test.js"
-import cut from "./cut.js"
+import testsAsync from "./cut-async.test.js"
+// import cut from "./cut.js"
 export const packages = [
   {
     name: "cut",
     versions: ["latest"],
-    import: async (version) => {
-      window.cut = (await import("./cut.js")).default
-      cut("mode", "prototype")
-      return cut
-    },
+    import: (version) => import("./cut.js?window+prototype"),
     fn: (module, name) => {
       const [cname, fname] = name.split(".")
       return (x, ...args) => (x == null ? cut[cname][fname](x, ...args) : x[fname](...args))
@@ -17,10 +13,10 @@ export const packages = [
     },
   },
 ]
-export default testsAsync.concat(testsSync).concat([
+export default testsSync.concat(testsAsync).concat([
   {
     name: "core.noMutation",
-    fn() {
+    fn: () => {
       const a = [3, 1, 2]
       a.reverse()
       if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
@@ -34,10 +30,10 @@ export default testsAsync.concat(testsSync).concat([
   },
   {
     name: "core.setup",
-    fn() {
+    fn: () => {
       // cut.Object.fake = () => 1 / 3
       // cut.shortcuts.fake = { after: (v) => Math.round(v * 100) }
-      if (cut.mode !== "prototype") throw new Error("cut.mode is not prototype")
+      if (cut.mode !== "window+prototype") throw new Error("cut.mode is not window+prototype")
       cut("shortcut", "fake", { after: (v) => Math.round(v * 100) })
       cut(Object, "fake", () => 1 / 3)
       if (Object.fake() !== 33) throw new Error("Object.fake result is not 33 " + Object.fake())
@@ -72,7 +68,7 @@ export default testsAsync.concat(testsSync).concat([
   },
   {
     name: "core.cleanup",
-    fn() {
+    fn: () => {
       for (let property in { a: 1 }) if (property !== "a") throw new Error(`Enumerable property ${property} still exists`)
       // if (Number.abs !== Math.abs) throw new Error("Number.abs !== Math.abs")
       cut("mode", "normal")
