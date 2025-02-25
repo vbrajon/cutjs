@@ -560,6 +560,11 @@ cut("shortcut", ["sum", "min", "max", "mean", "median"], (fn, arr, ...args) => {
   return fn(arr)
 })
 export default cut
+export { is, equal, access, transform }
+export const keys = cut.keys
+export const values = cut.values
+export const entries = cut.entries
+export const fromEntries = cut.fromEntries
 export const map = cut.map
 export const reduce = cut.reduce
 export const filter = cut.filter
@@ -588,6 +593,11 @@ export const capitalize = cut.capitalize
 export const words = cut.words
 export const format = cut.format
 export const duration = cut.duration
+export const relative = cut.relative
+export const getWeek = cut.getWeek
+export const getQuarter = cut.getQuarter
+export const getLastDate = cut.getLastDate
+export const getTimezone = cut.getTimezone
 export const modify = cut.modify
 export const plus = cut.plus
 export const minus = cut.minus

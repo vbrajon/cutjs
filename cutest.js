@@ -1,3 +1,6 @@
+// The idea behind this is to have a test runner to compare multiple packages and versions
+// for the same function and same set of tests input/output. 
+// It also runs in the browser targeting any compatible test file.
 if (!globalThis.window) globalThis.window = globalThis
 window.process = window.process || {}
 async function run(file, options) {

@@ -76,22 +76,22 @@ invalid.transpose() //! Not a matrix
 
 ## Functions
 
-| Object        | Array       | Function  | String     | Number   | Date        | RegExp |
-| ------------- | ----------- | --------- | ---------- | -------- | ----------- | ------ |
-| _keys_        | _map_       | decorate  | lower      | duration | relative    | escape |
-| _values_      | _reduce_    | promisify | upper      | format   | getWeek     | plus   |
-| _entries_     | _filter_    | partial   | capitalize |          | getQuarter  | minus  |
-| _fromEntries_ | _find_      | memoize   | words      |          | getLastDate |        |
-| map           | _findIndex_ | every     | format     |          | getTimezone |        |
-| reduce        | _sort_      | wait      |            |          | format      |        |
-| filter        | _reverse_   | debounce  |            |          | modify      |        |
-| find          | group       | throttle  |            |          | plus        |        |
-| findIndex     | unique      |           |            |          | minus       |        |
-| access        | min         |           |            |          | start       |        |
-| equal         | max         |           |            |          | end         |        |
-| transform     | sum         |           |            |          |             |        |
-|               | mean        |           |            |          |             |        |
-|               | median      |           |            |          |             |        |
+| Generic   | Object        | Array       | Function  | String     | Number   | Date        | RegExp |
+| --------- | ------------- | ----------- | --------- | ---------- | -------- | ----------- | ------ |
+| is        | _keys_        | _map_       | decorate  | lower      | duration | relative    | escape |
+| equal     | _values_      | _reduce_    | promisify | upper      | format   | getWeek     | plus   |
+| access    | _entries_     | _filter_    | partial   | capitalize |          | getQuarter  | minus  |
+| transform | _fromEntries_ | _find_      | memoize   | words      |          | getLastDate |        |
+|           | map           | _findIndex_ | every     | format     |          | getTimezone |        |
+|           | reduce        | _sort_      | wait      |            |          | format      |        |
+|           | filter        | _reverse_   | debounce  |            |          | modify      |        |
+|           | find          | group       | throttle  |            |          | plus        |        |
+|           | findIndex     | unique      |           |            |          | minus       |        |
+|           |               | min         |           |            |          | start       |        |
+|           |               | max         |           |            |          | end         |        |
+|           |               | sum         |           |            |          |             |        |
+|           |               | mean        |           |            |          |             |        |
+|           |               | median      |           |            |          |             |        |
 
 ## Development
 
@@ -101,10 +101,10 @@ bun --watch cut.test.js
 
 ## Roadmap
 
-- [x] Docs interactive: https://raw.githack.com/vbrajon/rawjs/cut/index.html
-- [x] Test interactive: https://raw.githack.com/vbrajon/rawjs/cut/cutest.html
+- [x] Interactive Docs & Tests: https://raw.githack.com/vbrajon/rawjs/cut/index.html
 - [ ] Typescript
 - [ ] Monaco Editor
 - [ ] Blog Post / Hacker News / Product Hunt
 - [ ] Every Array Fn
 - [ ] Async/Iterator/Generator
+- [ ] Replace cutest by bun test
