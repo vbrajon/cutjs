@@ -22,7 +22,7 @@
   import cut from "./cut.js?window+prototype"
   import tests from "./cut-core.test.js"
   // import cutest from "./cutest.js"
-  // await cutest("cut-core.test.js") // TODO: make this work when raun twice
+  // await cutest("cut-core.test.js") // TODO: make this work when ran twice
   // window.cutest = cutest
   // window.tests = tests
   // window.refresh = refresh
@@ -30,33 +30,42 @@
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   const README = await fetch("README.md").then((res) => res.text())
-  const EXEMPLE = /```js([\s\S]*?)```/.exec(README)[1].trim().replace(/.*\n/, "") + "\n"
+  const EXEMPLE =
+    /```js([\s\S]*?)```/
+      .exec(README)[1]
+      .trim()
+      .replace(/(.*\n){3}/, "") + "\n"
   const textarea = $(".editor textarea")
   const maxSize = (textarea.clientWidth - 40) / 9
   textarea.addEventListener("input", refresh)
   addEventListener("hashchange", reload)
   $(".z-10").innerHTML += Object.keys(cut.constructors)
-    .map((cname) => `<a class="border border-transparent px-2 py-1 ${cname}" href="#${cname}">${cname}</a>`)
+    .map((cname) => `<a class="border border-transparent px-2 py-1" href="#${cname}">${cname}</a>`)
     .join("\n")
   reload()
   async function run(code) {
     try {
-      if (!code.includes("await")) return { data: await eval(`${code}`) }
-      return { data: await eval(`(async () => {\n${code.replace(/(.*)$/, (m) => "return " + m)}\n})()`) }
+      if (code.includes("await")) return { data: await eval(`(async () => {\n${code.replace(/(.*)$/, (m) => "return " + m)}\n})()`) }
+      const constant = (/const (\w+) = (.*)/.exec(code.split("\n").at(-1)) || ["", ""])[1]
+      return { data: await eval(`${code}\n${constant}`) }
     } catch (error) {
+      const expected = code.split("\n").at(-1).split(" //! ")[1]
+      if (expected === error.message) return {}
       return { error }
     }
   }
   async function comment(line, i, all) {
-    const lines = all.slice(0, i + 1)
     if (!line || line.startsWith("//")) return { line }
-    const { data, error } = await run(lines.join("\n"))
+    const code = all.slice(0, i + 1).join("\n")
+    const { data, error } = await run(code)
+    if (line.includes("//!") && data) return { line: line.replace("//!", "//✗"), data, error }
+    if (line.includes("//!")) return { line: line.replace("//!", "//✓"), data, error }
     const expected = line.split("//= ")[1]
     const str = data instanceof Function ? data.toString() : stringify(data)
     const com = line + " //> " + str
     if (expected === str) return { line: line.replace("//=", "//✓"), data, error }
     if (expected) return { line: line.replace("//=", "//✗"), data, error }
-    if (data == null || line.includes("//")) return { line, data, error }
+    if (data == null || line.includes("// ")) return { line, data, error }
     return { line, data, error, com }
   }
   async function refresh(text) {
@@ -72,13 +81,16 @@
     const code = (await info.map((v) => v.com || v.line).join("\n")) + "\n"
     const html = await codeToHtml(code, { lang: "js", theme: "github-dark" })
     $(".editor pre").outerHTML = html.replace(/style="[^"]*"/, `style="grid-column:1;grid-row:1;"`).replace(/tabindex="0"/, "")
-    $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "red", "=": "orange", "✓": "#7d0", "✗": "#f34" }[el.textContent.trim()[2]] || "#6A737D"}`))
+    $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "#f34", "=": "orange", "✓": "#7d0", "✗": "#f34" }[el.textContent.trim()[2]] || "#6A737D"}`))
   }
   function reload() {
+    const colors = ["#fff", "#789", "#fd0", "#f34", "#39f", "#fa3", "#7d0", "#f6e", "#3df"]
     const links = $$("a[href]")
     const link = links.find((el) => el.getAttribute("href") === location.hash) || links[0]
-    links.forEach((el) => (el.style = ""))
-    link.style = "border-color: rgb(255 255 255 / 5%);border-right: 3px solid currentColor;background: #161b22"
+    links.forEach((el, i) => {
+      if (el === link) el.style = `color:${colors[i]};border-color: ${colors[i]}1;border-right: 3px solid ${colors[i]};background: #FFFFFF10`
+      else el.style = `color:${colors[i]}8;`
+    })
     const cname = location.hash.slice(1)
     const testfn = tests
       .filter((t) => t.name && t.name.split(".")[0] === cname)
@@ -155,13 +167,4 @@
 .font-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
 .caret-\[orange\]{caret-color:orange;}
 .outline-0{outline-width:0px;}
-/* Primitive colors */
-.Generic { color: #789; }
-.Object { color: #fd0; }
-.Array { color: #f34; }
-.Function { color: #39f; }
-.String { color: #fa3; }
-.Number { color: #7d0; }
-.Date { color: #f6e; }
-.RegExp { color: #3df; }
 </style>

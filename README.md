@@ -14,49 +14,64 @@
 
 ---
 
-## Example
+## Examples
 
 ```js
+// Import cut, and optionally expose window.cut and extend all prototypes
 import "cut?window+prototype"
+
+// Format a Date
+new Date("2000").format() //= "2000-01-01T01:00:00+01:00"
+new Date("2000").format("YYYY-QQ") //= "2000-Q1"
+new Date("2000").format("day, month, year", "en") //= "January 1, 2000"
+
+// Format a String
+"hello_world".format() //= "Hello World"
+"hello_world".format("camel") //= "helloWorld"
+"{}_{}".format(["hello", "world"]) //= "hello_world"
+
+// Format a Number
+0.30000000000000004.format() //= 0.3
+123456.789.format(2) //= "120k"
+123456.789.format("en") //= "123,456.789"
+
+// Manipulate a Date
+new Date("2000").plus("3 millisecond") //= new Date("2000-01-01T00:00:01.000Z")
+new Date("2000").minus("1 year, 2 month") //= new Date("1998-11-01T00:00:00.000Z")
+new Date("2000").start("year") //= new Date("1999-12-31T23:00:00.000Z")
+new Date("2000").end("year") //= new Date("2000-12-31T22:59:59.000Z")
+
+// Manipulate an Object or Array
 const users = [
   { name: "John", age: 25, city: "Paris" },
   { name: "Jane", age: 30, city: "London" },
   { name: "Jack", age: 14, city: "New York" },
-]
-users //
-  .group("city") // {"Paris":[{name:"John",age:25,city:"Paris"}],...}
-  .map(g => g.sum("age")) //= {"Paris":25,"London":30,"New York":14}
-  .values() //= [25,30,14]
-  .mean() //= 23
-  .transform(v => v * 100 + 0.01234) //= 2300.01234
-  .format("en") //= "2,300.012"
-```
+] //
+const usersByCity = users.group("city")
+const avgAgeByCity = usersByCity.map((g) => g.mean("age")) //= {"Paris":25,"London":30,"New York":14}
 
-and extend with your own functions or shortcuts:
-
-```js
-// Extending Function as follow
+// Add a Function
 cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
-// Add a shortcut with:
+
+// Add a shortcut
 cut("shortcut", "transpose", {
   before(args) {
     if (args[0].some((row) => row.length !== args[0][0].length)) throw new Error("Not a matrix")
     return args
   },
 })
-// Add an alias with:
+
+// Add an alias
 cut(Array, "swap", cut.Array.transpose)
-// Then use it with:
+
+// And use it
 const matrix = [
   [1, 2, 3],
   [4, 5, 6],
 ]
-cut.swap(matrix)
-// or
-cut(matrix).swap()
-// or
-cut("mode", "prototype")
-matrix.swap()
+matrix.swap() //= [[1,4],[2,5],[3,6]]
+const invalid = [[1], [2, 3]]
+invalid.transpose() //! Not a matrix
 ```
 
 ## Functions
@@ -89,6 +104,7 @@ bun --watch cut.test.js
 - [x] Docs interactive: https://raw.githack.com/vbrajon/rawjs/cut/index.html
 - [x] Test interactive: https://raw.githack.com/vbrajon/rawjs/cut/cutest.html
 - [ ] Typescript
+- [ ] Monaco Editor
 - [ ] Blog Post / Hacker News / Product Hunt
 - [ ] Every Array Fn
 - [ ] Async/Iterator/Generator
