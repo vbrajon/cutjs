@@ -314,19 +314,7 @@ export default [
   ["Date.relative", date, date, ""],
   ["Date.relative", new Date(+date - 1000), date, "1 second ago"], //* 1 second before
   ["Date.relative", new Date(+date + 2 * 60 * 60 * 1000), date, "2 hours from now"], //* 2 hours after
-  {
-    name: "RegExp.escape",
-    fn: (fn) => fn(/john@gmail.com/).source,
-    output: "john@gmail\\.com",
-  },
-  {
-    name: "RegExp.plus",
-    fn: (fn) => fn(/QwErTy/, "i").flags,
-    output: "i",
-  },
-  {
-    name: "RegExp.minus",
-    fn: (fn) => fn(/QwErTy/, "i").flags,
-    output: "",
-  },
+  ["RegExp.escape", /john@gmail.com/, /john@gmail\.com/],
+  ["RegExp.plus", /QwErTy/yvsm, "gim", /QwErTy/gimsvy],
+  ["RegExp.minus", /QwErTy/i, "gi", /QwErTy/],
 ]

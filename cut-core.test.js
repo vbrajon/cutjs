@@ -9,7 +9,6 @@ export const packages = [
     fn: (module, name) => {
       const [cname, fname] = name.split(".")
       return (x, ...args) => (x == null ? cut[cname][fname](x, ...args) : x[fname](...args))
-      // return window[cname]?.[fname]
     },
   },
 ]
@@ -24,8 +23,11 @@ export default testsSync.concat(testsAsync).concat([
       cut("shortcut", "reverse", null)
       if (cut.shortcuts.reverse) throw new Error("cut.shortcuts.reverse still exists")
       a.reverse()
-      if (a[0] !== 2) throw new Error("Array.reverse does not mutate the array")
+      if (a[0] === 3) throw new Error("Array.reverse does not mutate the array")
+      a.reverse()
       cut("shortcut", "reverse", reverse)
+      a.reverse()
+      if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
     },
   },
   {
@@ -41,7 +43,9 @@ export default testsSync.concat(testsAsync).concat([
       cut("shortcut", "fake", null)
       if (Object.fake) throw new Error("Object.fake still exists")
       if (Object.prototype.fake) throw new Error("Object.prototype.fake still exists")
-      if (cut.shortcuts.fake) throw new Error("shortcut.fake still exists")
+      if (cut.fake) throw new Error("cut.fake still exists")
+      if (cut.Object.fake) throw new Error("cut.Object.fake still exists")
+      if (cut.shortcuts.fake) throw new Error("cut.shortcuts.fake still exists")
 
       cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
       cut("shortcut", "transpose", {
@@ -58,12 +62,12 @@ export default testsSync.concat(testsAsync).concat([
       ]
       let error
       try {
-        cut(matrix.concat([[7, 2]])).transpose()
+        cut.transpose(matrix.concat([[7, 2]]))
       } catch (e) {
         error = e
       }
       if (!error || error.message !== "Not a matrix") throw new Error("Matrix error not thrown") // "Not a matrix"
-      if (cut(matrix).swap().length !== 3) throw new Error("Matrix not transposed") // [[1, 4], [2, 5], [3, 6]]
+      if (cut.swap(matrix).length !== 3) throw new Error("Matrix not transposed") // [[1, 4], [2, 5], [3, 6]]
     },
   },
   {
@@ -78,8 +82,10 @@ export default testsSync.concat(testsAsync).concat([
       if (Array.map) throw new Error("Array.map still exists")
       if (Number.abs) throw new Error("Number.abs still exists")
       const a = [3, 1, 2]
+      cut.reverse(a)
+      if (a[0] !== 3) throw new Error("cut.reverse mutates the array")
       a.reverse()
-      if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
+      if (a[0] === 3) throw new Error("Array.reverse does not mutate the array")
     },
   },
 ])

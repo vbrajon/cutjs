@@ -22,20 +22,11 @@
   import { codeToHtml } from "https://esm.sh/shiki@1.0.0"
   import cut from "./cut.js?window+prototype"
   import tests from "./cut-core.test.js"
-  // import cutest from "./cutest.js"
-  // await cutest("cut-core.test.js") // TODO: make this work when ran twice
-  // window.cutest = cutest
-  // window.tests = tests
-  // window.refresh = refresh
   window.$ = (selector, root = document) => root.querySelector(selector)
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   const README = await fetch("README.md").then((res) => res.text())
-  const EXEMPLE =
-    /```js([\s\S]*?)```/
-      .exec(README)[1]
-      .trim()
-      .replace(/(.*\n){3}/, "") + "\n"
+  const EXEMPLE = /```js\n([\s\S]*?)```/.exec(README)[1]
   const textarea = $(".editor textarea")
   const maxSize = (textarea.clientWidth - 40) / 9
   textarea.addEventListener("input", refresh)
@@ -43,9 +34,11 @@
   $(".z-10").innerHTML += Object.keys(cut.constructors)
     .map((cname) => `<a class="border border-transparent px-2 py-1" href="#${cname}">${cname}</a>`)
     .join("\n")
+  $(".z-10").innerHTML += `<div class="ml-auto px-2 py-1 font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
   reload()
   async function run(code) {
     try {
+      code = code.replace(/^import /gm, "// import ")
       if (code.includes("await")) return { data: await eval(`(async () => {\n${code.replace(/(.*)$/, (m) => "return " + m)}\n})()`) }
       const constant = (/const (\w+) = (.*)/.exec(code.split("\n").at(-1)) || ["", ""])[1]
       return { data: await eval(`${code}\n${constant}`) }
@@ -62,11 +55,11 @@
     if (line.includes("//!") && data) return { line: line.replace("//!", "//✗"), data, error }
     if (line.includes("//!")) return { line: line.replace("//!", "//✓"), data, error }
     const expected = line.split("//= ")[1]
-    const str = data instanceof Function ? data.toString() : stringify(data)
-    const com = line + " //> " + str
+    const str = stringify(data)
+    const com = line + " //> " + str.replace(/\n/g, "\\n")
     if (expected === str) return { line: line.replace("//=", "//✓"), data, error }
     if (expected) return { line: line.replace("//=", "//✗"), data, error }
-    if (data == null || line.includes("// ")) return { line, data, error }
+    if (data == null || line.includes("//")) return { line, data, error }
     return { line, data, error, com }
   }
   async function refresh(text) {
@@ -83,26 +76,29 @@
     const html = await codeToHtml(code, { lang: "js", theme: "github-dark" })
     $(".editor pre").outerHTML = html.replace(/style="[^"]*"/, `style="grid-column:1;grid-row:1;"`).replace(/tabindex="0"/, "")
     $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "#f34", "=": "orange", "✓": "#7d0", "✗": "#f34" }[el.textContent.trim()[2]] || "#6A737D"}`))
+    $('span[style="color:#7d0"]').textContent = code.split("//✓").length - 1
+    $('span[style="color:#f34"]').textContent = (code.split("//✗").length - 1 || "") + (error?.error ? "!" : "")
   }
   function reload() {
-    const colors = ["#fff", "#789", "#fd0", "#f34", "#39f", "#fa3", "#7d0", "#f6e", "#3df"]
+    const colors = ["#fff", "#abc", "#fd0", "#f34", "#39f", "#fa3", "#7d0", "#f6e", "#3df"]
     const links = $$("a[href]")
     const link = links.find((el) => el.getAttribute("href") === location.hash) || links[0]
     links.forEach((el, i) => {
-      if (el === link) el.style = `color:${colors[i]};border-color: ${colors[i]}1;border-bottom: 3px solid ${colors[i]};background: #FFFFFF10`
+      if (el === link) el.style = `color:${colors[i]};border-color: ${colors[i]}1;border-bottom: 2px solid ${colors[i]};background: #FFFFFF10`
       else el.style = `color:${colors[i]}8;`
     })
     const cname = location.hash.slice(1)
+    const imp = `import { ${Object.keys(cut[cname] || {}).join(", ")} } from "cut"\n\n`
     const testfn = tests
       .filter((t) => t.name && t.name.split(".")[0] === cname)
-      .map((t, i) => `const fn${i} = ${t.fn.toString()}\nawait fn${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
+      .map((t, i) => `const test${i} = ${t.fn.toString()}\nawait test${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
       .join("\n")
-    if (testfn) return refresh(testfn)
+    if (testfn) return refresh(imp + testfn)
     const teststr = tests
       .filter((t) => t[0] && t[0].split(".")[0] === cname)
       .map((t, i) => `${t[0].split(".")[1]}(${t.slice(1, -1).map(stringify).join(", ")}) //= ${stringify(t.at(-1))}`)
       .join("\n")
-    if (teststr) return refresh(teststr)
+    if (teststr) return refresh(imp + teststr)
     return refresh(EXEMPLE)
   }
   function stringify(v) {
@@ -133,7 +129,7 @@
 </script>
 <!-- <script src="https://unpkg.com/@tailwindcss/browser@4"></script> -->
 <style>
-  /*! tailwindcss v4.0.8 | MIT License | https://tailwindcss.com */
+  /*! tailwindcss v4.0.9 | MIT License | https://tailwindcss.com */
   @layer theme, base, components, utilities;
   @layer theme {
     :root,
@@ -335,77 +331,64 @@
     }
   }
   @layer utilities {
-    .z-10 {
-      z-index: 10;
-    }
-    .\[grid-column\:1\] {
-      grid-column: 1;
-    }
-    .\[grid-row\:1\] {
-      grid-row: 1;
-    }
     .flex {
       display: flex;
-    }
-    .grid {
-      display: grid;
-    }
-    .h-full {
-      height: 100%;
-    }
-    .h-screen {
-      height: 100vh;
-    }
-    .w-full {
-      width: 100%;
-    }
-    .w-screen {
-      width: 100vw;
-    }
-    .resize-none {
-      resize: none;
     }
     .flex-col {
       flex-direction: column;
     }
-    .overflow-auto {
-      overflow: auto;
+    .h-screen {
+      height: 100vh;
+    }
+    .w-screen {
+      width: 100vw;
+    }
+    .bg-\[\#0d1116\] {
+      background-color: #0d1116;
+    }
+    .text-white {
+      color: var(--color-white);
     }
     .overscroll-none {
       overscroll-behavior: none;
+    }
+    .z-10 {
+      z-index: 10;
+    }
+    .overflow-auto {
+      overflow: auto;
     }
     .border {
       border-style: var(--tw-border-style);
       border-width: 1px;
     }
-    .border-\[20px\] {
-      border-style: var(--tw-border-style);
-      border-width: 20px;
-    }
-    .border-none {
-      --tw-border-style: none;
-      border-style: none;
-    }
-    .border-\[\#161b22\] {
-      border-color: #161b22;
-    }
     .border-transparent {
       border-color: transparent;
-    }
-    .bg-\[\#0d1116\] {
-      background-color: #0d1116;
-    }
-    .bg-\[\#161b22\] {
-      background-color: #161b22;
-    }
-    .bg-transparent {
-      background-color: transparent;
     }
     .px-2 {
       padding-inline: calc(var(--spacing) * 2);
     }
     .py-1 {
       padding-block: calc(var(--spacing) * 1);
+    }
+    .w-full {
+      width: 100%;
+    }
+    .h-full {
+      height: 100%;
+    }
+    .border-\[20px\] {
+      border-style: var(--tw-border-style);
+      border-width: 20px;
+    }
+    .border-\[\#161b22\] {
+      border-color: #161b22;
+    }
+    .bg-\[\#161b22\] {
+      background-color: #161b22;
+    }
+    .grid {
+      display: grid;
     }
     .font-mono {
       font-family: var(--font-mono);
@@ -414,14 +397,27 @@
       font-size: var(--text-sm);
       line-height: var(--tw-leading, var(--text-sm--line-height));
     }
-    .whitespace-pre {
-      white-space: pre;
+    .\[grid-column\:1\] {
+      grid-column: 1;
+    }
+    .\[grid-row\:1\] {
+      grid-row: 1;
+    }
+    .resize-none {
+      resize: none;
+    }
+    .border-none {
+      --tw-border-style: none;
+      border-style: none;
+    }
+    .bg-transparent {
+      background-color: transparent;
     }
     .text-transparent {
       color: transparent;
     }
-    .text-white {
-      color: var(--color-white);
+    .whitespace-pre {
+      white-space: pre;
     }
     .caret-\[orange\] {
       caret-color: orange;
@@ -429,6 +425,12 @@
     .outline-0 {
       outline-style: var(--tw-outline-style);
       outline-width: 0px;
+    }
+    .ml-auto {
+      margin-left: auto;
+    }
+    .gap-2 {
+      gap: calc(var(--spacing) * 2);
     }
   }
   @property --tw-border-style {

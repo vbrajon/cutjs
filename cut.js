@@ -1,6 +1,7 @@
 // Generic
 function type(a) {
-  if (!a) return Number.isNaN(a) ? "NaN" : Object.prototype.toString.call(a).slice(8, -1)
+  if (Number.isNaN(a)) return "NaN"
+  if (!a || !a.constructor) return Object.prototype.toString.call(a).slice(8, -1)
   return a.constructor.name
 }
 function is(a, constructor) {
@@ -189,11 +190,11 @@ function string_format(str, ...args) {
   if (["-", "dash"].includes(args[0])) args[0] = "kebab"
   if (["_", "underscore"].includes(args[0])) args[0] = "snake"
   if (["title", "pascal", "camel", "kebab", "snake"].includes(args[0])) {
-    let tokens = string_words(str.toLowerCase())
+    let words = string_words(str.toLowerCase())
     if (args[0] === "camel") return string_format(str, "pascal").replace(/./, (c) => c.toLowerCase())
-    if (["title", "pascal"].includes(args[0])) tokens = tokens.map((v) => v.replace(/./, (c) => c.toUpperCase()))
+    if (["title", "pascal"].includes(args[0])) words = words.map((v) => v.replace(/./, (c) => c.toUpperCase()))
     const sep = { kebab: "-", snake: "_", pascal: "" }[args[0]] ?? " "
-    return tokens.join(sep)
+    return words.join(sep)
   }
   let i = 0
   let fn
@@ -328,33 +329,35 @@ function date_end(date, options) {
 function regexp_escape(re) {
   return RegExp(re.source.replace(/([\\/'*+?|()[\]{}.^$-])/g, "\\$1"), re.flags)
 }
-function regexp_plus(re, f) {
-  return RegExp(re.source, re.flags.replace(f, "") + f)
+function regexp_plus(re, flags) {
+  return RegExp(re.source, [...new Set(re.flags + flags)].sort().join(""))
 }
-function regexp_minus(re, f) {
-  return RegExp(re.source, re.flags.replace(f, ""))
+function regexp_minus(re, flags) {
+  return RegExp(re.source, [...new Set(re.flags.replace(new RegExp(`[${flags}]`, "g"), ""))].sort().join(""))
 }
 // Core
 function cut(...args) {
-  if (args.length === 1) return wrap(...args)
+  init()
+  // if (args.length === 1) return wrap(...args)
   if (args[0] === "mode") return mode(...args)
   if (args[0] === "shortcut") return shortcut(...args)
   return fn(...args)
-  function wrap(x) {
-    const cname = x?.constructor.name
-    return new Proxy(
-      { x },
-      {
-        get(target, prop, receiver) {
-          if (x.hasOwnProperty(prop)) return x[prop]
-          if (prop === "_") return x
-          const f = cut[cname][prop]
-          if (f) return (...args) => wrap(f(x, ...args))
-        },
-      }
-    )
-  }
+  // function wrap(x) {
+  //   const cname = x?.constructor.name
+  //   return new Proxy(
+  //     { x },
+  //     {
+  //       get(target, prop, receiver) {
+  //         if (x.hasOwnProperty(prop)) return x[prop]
+  //         if (prop === "_") return x
+  //         const f = cut[cname][prop]
+  //         if (f) return (...args) => wrap(f(x, ...args))
+  //       },
+  //     }
+  //   )
+  // }
   function mode(_, mode) {
+    if (!mode) return
     cut.mode = mode
     Object.entries(cut.constructors).forEach(([cname, constructor]) => {
       Object.entries(cut[cname]).forEach(([fname, f]) => {
@@ -363,31 +366,27 @@ function cut(...args) {
     })
   }
   function shortcut(_, key, value) {
-    if (key instanceof Array) return key.map((n) => shortcut(_, n, value))
+    if (key instanceof Array) return key.map((k) => shortcut(_, k, value))
     cut.shortcuts[key] = value
     mode(_, cut.mode)
   }
   function fn(constructor, key, value) {
     if (!constructor) constructor = { name: "Generic", prototype: Object.prototype }
-    if (key.startsWith("_")) return
-    cut.constructors[constructor.name] = constructor
-    cut[constructor.name] = cut[constructor.name] || {}
-    if (constructor.prototype[key] && !constructor.prototype[key]?.toString()?.includes("[native code]") && !cut[constructor.name]["_" + key]) delete constructor.prototype[key]
-    if (!value) {
-      if (cut[constructor.name]["_" + key]) {
-        constructor.prototype[key] = cut[constructor.name]["_" + key]
-        delete cut[constructor.name]["_" + key]
-      }
-      return delete cut[constructor.name][key]
-    }
+    if (constructor.prototype[key]?.native) constructor.prototype[key] = constructor.prototype[key].native
+    if (constructor.prototype[key] && !constructor.prototype[key].toString()?.includes("[native code]")) delete constructor.prototype[key]
+    if (!value && Object.values(cut.constructors).every((v) => !v[key])) delete cut[key]
+    if (!value) return delete cut[constructor.name][key]
     if (value.fn) value = value.fn
     if (value === "native" && constructor[key]) value = constructor[key]
     if (value === "native" && constructor.prototype[key]) {
-      cut[constructor.name]["_" + key] = constructor.prototype[key]
-      value = (x, ...args) => cut[constructor.name]["_" + key].call(x, ...args)
+      const native = constructor.prototype[key]
+      value = (x, ...args) => native.call(x, ...args)
+      value.native = native
     }
     const shortcut = cut.shortcuts.hasOwnProperty(key) && cut.shortcuts[key]
     const fn = function_decorate(value, shortcut)
+    cut.constructors[constructor.name] = constructor
+    cut[constructor.name] = cut[constructor.name] || {}
     cut[constructor.name][key] = fn
     cut[key] = (...args) => {
       if (value?.toString()?.includes("[native code]") || !cut[args[0]?.constructor.name]?.[key]) return cut[constructor.name][key](...args)
@@ -398,210 +397,164 @@ function cut(...args) {
       window[key] = cut[key]
     }
     if (cut.mode?.includes("prototype")) {
-      try {
-        let f = { [key]: function() { return fn(this, ...arguments) } } // prettier-ignore
-        if (constructor.name === "Generic") f = { [key]: function() { return this === cut[arguments?.[0]?.constructor.name] ? fn(...arguments) : fn(this, ...arguments)} } // prettier-ignore
-        Object.defineProperty(constructor.prototype, key, {
-          writable: true,
-          configurable: true,
-          value: f[key],
-        })
-      } catch (e) {
-        console.error(e)
-      }
+      let f = { [key]: function() { return fn(this, ...arguments) } } // prettier-ignore
+      if (constructor.name === "Generic") f = { [key]: function() { return this === cut[arguments?.[0]?.constructor.name] ? fn(...arguments) : fn(this, ...arguments)} } // prettier-ignore
+      Object.defineProperty(constructor.prototype, key, { writable: true, configurable: true, value: f[key] }) // enumerable: false
+      if (value.native) constructor.prototype[key].native = value.native
     }
   }
-}
-cut.constructors = {}
-cut.shortcuts = {}
-cut(null, "is", is)
-cut(null, "equal", equal)
-cut(null, "access", access)
-cut(null, "transform", transform)
-cut(Object, "keys", "native")
-cut(Object, "values", "native")
-cut(Object, "entries", "native")
-cut(Object, "fromEntries", "native")
-cut(Object, "map", object_map)
-cut(Object, "reduce", object_reduce)
-cut(Object, "filter", object_filter)
-cut(Object, "find", object_find)
-cut(Object, "findIndex", object_findIndex)
-cut(Array, "map", "native")
-cut(Array, "reduce", "native")
-cut(Array, "filter", "native")
-cut(Array, "find", "native")
-cut(Array, "findIndex", "native")
-cut(Array, "sort", "native")
-cut(Array, "reverse", "native")
-cut(Array, "group", array_group)
-cut(Array, "unique", array_unique)
-cut(Array, "min", array_min)
-cut(Array, "max", array_max)
-cut(Array, "sum", array_sum)
-cut(Array, "mean", array_mean)
-cut(Array, "median", array_median)
-cut(Function, "decorate", function_decorate)
-cut(Function, "promisify", function_promisify)
-cut(Function, "partial", function_partial)
-cut(Function, "memoize", function_memoize)
-cut(Function, "every", function_every)
-cut(Function, "wait", function_wait)
-cut(Function, "debounce", function_debounce)
-cut(Function, "throttle", function_throttle)
-cut(String, "lower", string_lower)
-cut(String, "upper", string_upper)
-cut(String, "capitalize", string_capitalize)
-cut(String, "words", string_words)
-cut(String, "format", string_format)
-cut(Number, "duration", number_duration)
-cut(Number, "format", number_format)
-// Object.getOwnPropertyNames(Math)
-//   .filter((k) => typeof Math[k] === "function")
-//   .forEach((k) => cut(Number, k, Math[k]))
-cut(Date, "relative", date_relative)
-cut(Date, "getWeek", date_getWeek)
-cut(Date, "getQuarter", date_getQuarter)
-cut(Date, "getLastDate", date_getLastDate)
-cut(Date, "getTimezone", date_getTimezone)
-cut(Date, "format", date_format)
-cut(Date, "modify", date_modify)
-cut(Date, "plus", date_plus)
-cut(Date, "minus", date_minus)
-cut(Date, "start", date_start)
-cut(Date, "end", date_end)
-cut(RegExp, "escape", regexp_escape)
-cut(RegExp, "plus", regexp_plus)
-cut(RegExp, "minus", regexp_minus)
-// cut("shortcut", ["relative", "getWeek", "getQuarter", "getLastDate", "getTimezone", "format", "modify", "plus", "minus", "start", "end"], {
-//   before(args) {
-//     if (typeof args[0] === "string") args[0] = new Date(args[0].length <= 10 ? args[0] + "T00:00:00" : args[0])
-//     return args
-//   },
-// })
-cut("shortcut", "map", {
-  before(args) {
-    const f = (fn) => {
-      if (fn == null) return (x) => x
-      if (typeof fn === "function") return fn
-      if (fn instanceof Array) return (x) => fn.map((b) => access(x, b))
-      return (x) => access(x, fn)
-    }
-    args[1] = f(args[1])
-    return args
-  },
-})
-cut("shortcut", ["filter", "find", "findIndex"], {
-  before(args) {
-    const f = (fn) => {
-      if (fn == null) return (x) => x
-      if (typeof fn === "function") return fn
-      if (fn instanceof RegExp) return (x) => fn.test(x)
-      if (fn instanceof Array) return (x) => fn.some((v) => f(v)(x))
-      if (fn instanceof Object) return (x) => Object.keys(fn).every((k) => f(fn[k])(x[k]))
-      return (x) => equal(x, fn) || access(x, fn)
-    }
-    args[1] = f(args[1])
-    return args
-  },
-})
-cut("shortcut", "sort", {
-  before(args) {
-    function defaultSort(a, b) {
-      if (typeof a !== typeof b) return typeof a > typeof b ? 1 : -1
-      if (a == null || a instanceof Object) return 0
-      return a === b ? 0 : a > b ? 1 : -1
-    }
-    function directedSort(p, desc = /^-/.test(p)) {
-      p = ("" + p).replace(/^[+-]/, "")
-      return (a, b) => defaultSort(access(a, p), access(b, p)) * +(!desc || -1)
-    }
-    function multiSort(fns) {
-      return (a, b) => {
-        for (const fn of fns) {
-          const z = fn(a, b)
-          if (z) return z
+  function init() {
+    if (cut.constructors) return
+    cut.constructors = {}
+    cut.shortcuts = {}
+    // cut("shortcut", ["relative", "getWeek", "getQuarter", "getLastDate", "getTimezone", "format", "modify", "plus", "minus", "start", "end"], {
+    //   before(args) {
+    //     if (typeof args[0] === "string") args[0] = new Date(args[0].length <= 10 ? args[0] + "T00:00:00" : args[0])
+    //     return args
+    //   },
+    // })
+    cut("shortcut", "map", {
+      before(args) {
+        const f = (fn) => {
+          if (fn == null) return (x) => x
+          if (typeof fn === "function") return fn
+          if (fn instanceof Array) return (x) => fn.map((b) => access(x, b))
+          return (x) => access(x, fn)
         }
-      }
-    }
-    function f(fn) {
-      if (fn == null) return defaultSort
-      if (fn instanceof Array) return multiSort(fn.map(f))
-      if (typeof fn === "function" && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
-      if (typeof fn === "function") return fn
-      if (typeof fn === "string" && typeof args[0][0] === "string") return Intl.Collator(fn, { numeric: true, ...args[2] }).compare
-      return directedSort(fn)
-    }
-    args[0] = args[0].slice()
-    args[1] = f(args[1])
-    return args
-  },
-})
-cut("shortcut", "reverse", {
-  before(args) {
-    args[0] = args[0].slice()
-    return args
-  },
-})
-cut("shortcut", "group", {
-  before(args) {
-    args[1] = [].concat(args[1])
-    return args
-  },
-})
-cut("shortcut", "format", {
-  after(v) {
-    if (/(Invalid Date|NaN|null|undefined)/.test(v)) return "-"
-    return v
-  },
-})
-cut("shortcut", ["sum", "min", "max", "mean", "median"], (fn, arr, ...args) => {
-  if (args[0]) return fn(cut.Array.map(arr, args[0]))
-  return fn(arr)
-})
+        args[1] = f(args[1])
+        return args
+      },
+    })
+    cut("shortcut", ["filter", "find", "findIndex"], {
+      before(args) {
+        const f = (fn) => {
+          if (fn == null) return (x) => x
+          if (typeof fn === "function") return fn
+          if (fn instanceof RegExp) return (x) => fn.test(x)
+          if (fn instanceof Array) return (x) => fn.some((v) => f(v)(x))
+          if (fn instanceof Object) return (x) => Object.keys(fn).every((k) => f(fn[k])(x[k]))
+          return (x) => equal(x, fn) || access(x, fn)
+        }
+        args[1] = f(args[1])
+        return args
+      },
+    })
+    cut("shortcut", "sort", {
+      before(args) {
+        function defaultSort(a, b) {
+          if (typeof a !== typeof b) return typeof a > typeof b ? 1 : -1
+          if (a == null || a instanceof Object) return 0
+          return a === b ? 0 : a > b ? 1 : -1
+        }
+        function directedSort(p, desc = /^-/.test(p)) {
+          p = ("" + p).replace(/^[+-]/, "")
+          return (a, b) => defaultSort(access(a, p), access(b, p)) * +(!desc || -1)
+        }
+        function multiSort(fns) {
+          return (a, b) => {
+            for (const fn of fns) {
+              const z = fn(a, b)
+              if (z) return z
+            }
+          }
+        }
+        function f(fn) {
+          if (fn == null) return defaultSort
+          if (fn instanceof Array) return multiSort(fn.map(f))
+          if (typeof fn === "function" && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
+          if (typeof fn === "function") return fn
+          if (typeof fn === "string" && typeof args[0][0] === "string") return Intl.Collator(fn, { numeric: true, ...args[2] }).compare
+          return directedSort(fn)
+        }
+        args[0] = args[0].slice()
+        args[1] = f(args[1])
+        return args
+      },
+    })
+    cut("shortcut", "reverse", {
+      before(args) {
+        args[0] = args[0].slice()
+        return args
+      },
+    })
+    cut("shortcut", "group", {
+      before(args) {
+        args[1] = [].concat(args[1])
+        return args
+      },
+    })
+    cut("shortcut", "format", {
+      after(v) {
+        if (/(Invalid Date|NaN|null|undefined)/.test(v)) return "-"
+        return v
+      },
+    })
+    cut("shortcut", ["sum", "min", "max", "mean", "median"], (fn, arr, ...args) => {
+      if (args[0]) return fn(cut.Array.map(arr, args[0]))
+      return fn(arr)
+    })
+    cut(null, "is", is)
+    cut(null, "equal", equal)
+    cut(null, "access", access)
+    cut(null, "transform", transform)
+    cut(Object, "keys", "native")
+    cut(Object, "values", "native")
+    cut(Object, "entries", "native")
+    cut(Object, "fromEntries", "native")
+    cut(Object, "map", object_map)
+    cut(Object, "reduce", object_reduce)
+    cut(Object, "filter", object_filter)
+    cut(Object, "find", object_find)
+    cut(Object, "findIndex", object_findIndex)
+    cut(Array, "map", "native")
+    cut(Array, "reduce", "native")
+    cut(Array, "filter", "native")
+    cut(Array, "find", "native")
+    cut(Array, "findIndex", "native")
+    cut(Array, "sort", "native")
+    cut(Array, "reverse", "native")
+    cut(Array, "group", array_group)
+    cut(Array, "unique", array_unique)
+    cut(Array, "min", array_min)
+    cut(Array, "max", array_max)
+    cut(Array, "sum", array_sum)
+    cut(Array, "mean", array_mean)
+    cut(Array, "median", array_median)
+    cut(Function, "decorate", function_decorate)
+    cut(Function, "promisify", function_promisify)
+    cut(Function, "partial", function_partial)
+    cut(Function, "memoize", function_memoize)
+    cut(Function, "every", function_every)
+    cut(Function, "wait", function_wait)
+    cut(Function, "debounce", function_debounce)
+    cut(Function, "throttle", function_throttle)
+    cut(String, "lower", string_lower)
+    cut(String, "upper", string_upper)
+    cut(String, "capitalize", string_capitalize)
+    cut(String, "words", string_words)
+    cut(String, "format", string_format)
+    cut(Number, "duration", number_duration)
+    cut(Number, "format", number_format)
+    // Object.getOwnPropertyNames(Math)
+    //   .filter((k) => typeof Math[k] === "function")
+    //   .forEach((k) => cut(Number, k, Math[k]))
+    cut(Date, "relative", date_relative)
+    cut(Date, "getWeek", date_getWeek)
+    cut(Date, "getQuarter", date_getQuarter)
+    cut(Date, "getLastDate", date_getLastDate)
+    cut(Date, "getTimezone", date_getTimezone)
+    cut(Date, "format", date_format)
+    cut(Date, "modify", date_modify)
+    cut(Date, "plus", date_plus)
+    cut(Date, "minus", date_minus)
+    cut(Date, "start", date_start)
+    cut(Date, "end", date_end)
+    cut(RegExp, "escape", regexp_escape)
+    cut(RegExp, "plus", regexp_plus)
+    cut(RegExp, "minus", regexp_minus)
+  }
+}
+cut("mode", import.meta.url.split("?")[1] || "default")
 export default cut
-export { is, equal, access, transform }
-export const keys = cut.keys
-export const values = cut.values
-export const entries = cut.entries
-export const fromEntries = cut.fromEntries
-export const map = cut.map
-export const reduce = cut.reduce
-export const filter = cut.filter
-export const find = cut.find
-export const findIndex = cut.findIndex
-export const sort = cut.sort
-export const reverse = cut.reverse
-export const group = cut.group
-export const unique = cut.unique
-export const min = cut.min
-export const max = cut.max
-export const sum = cut.sum
-export const mean = cut.mean
-export const median = cut.median
-export const decorate = cut.decorate
-export const promisify = cut.promisify
-export const partial = cut.partial
-export const memoize = cut.memoize
-export const every = cut.every
-export const wait = cut.wait
-export const debounce = cut.debounce
-export const throttle = cut.throttle
-export const lower = cut.lower
-export const upper = cut.upper
-export const capitalize = cut.capitalize
-export const words = cut.words
-export const format = cut.format
-export const duration = cut.duration
-export const relative = cut.relative
-export const getWeek = cut.getWeek
-export const getQuarter = cut.getQuarter
-export const getLastDate = cut.getLastDate
-export const getTimezone = cut.getTimezone
-export const modify = cut.modify
-export const plus = cut.plus
-export const minus = cut.minus
-export const start = cut.start
-export const end = cut.end
-export const escape = cut.escape
-if (import.meta.url.includes("?")) cut("mode", import.meta.url.split("?")[1])
+const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, modify, plus, minus, start, end, escape } = cut // prettier-ignore
+export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, modify, plus, minus, start, end, escape } // prettier-ignore

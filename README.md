@@ -12,12 +12,9 @@
   A shortcut utility JS library for rapidly interacting with objects, dates, and functions.
 </p>
 
----
-
-## Examples
-
+<!-- prettier-ignore -->
 ```js
-// Import cut, and optionally expose window.cut and extend all prototypes
+// Import cut, and optionally expose functions in window or extend prototypes
 import "cut?window+prototype"
 
 // Format a Date
@@ -47,8 +44,8 @@ const users = [
   { name: "Jane", age: 30, city: "London" },
   { name: "Jack", age: 14, city: "New York" },
 ] //
-const usersByCity = users.group("city")
-const avgAgeByCity = usersByCity.map((g) => g.mean("age")) //= {"Paris":25,"London":30,"New York":14}
+const usersByCity = users.group("city") //~ {"Paris":[{name:"John",age:25,...}]}
+const avgAgeByCity = usersByCity.map((g) => g.mean("age")) //~ {"Paris":25...}
 
 // Add a Function
 cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
@@ -56,7 +53,8 @@ cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
 // Add a shortcut
 cut("shortcut", "transpose", {
   before(args) {
-    if (args[0].some((row) => row.length !== args[0][0].length)) throw new Error("Not a matrix")
+    const arr = args[0]
+    if (arr.some((row) => row.length !== arr[0].length)) throw new Error("Not a matrix")
     return args
   },
 })
@@ -65,10 +63,7 @@ cut("shortcut", "transpose", {
 cut(Array, "swap", cut.Array.transpose)
 
 // And use it
-const matrix = [
-  [1, 2, 3],
-  [4, 5, 6],
-]
+const matrix = [[1, 2, 3], [4, 5, 6]]
 matrix.swap() //= [[1,4],[2,5],[3,6]]
 const invalid = [[1], [2, 3]]
 invalid.transpose() //! Not a matrix
@@ -102,9 +97,26 @@ bun --watch cut.test.js
 ## Roadmap
 
 - [x] Interactive Docs & Tests: https://raw.githack.com/vbrajon/rawjs/cut/index.html
+- [ ] Every Array Fn
+- [ ] Every Iterator (Async, or Generator)
+- [ ] Replace cutest by bun test
 - [ ] Typescript
 - [ ] Monaco Editor
 - [ ] Blog Post / Hacker News / Product Hunt
-- [ ] Every Array Fn
-- [ ] Async/Iterator/Generator
-- [ ] Replace cutest by bun test
+- [ ] Collaboration / Multiplayer / CTRL-S to PR
+
+---
+
+- [date-fns](https://date-fns.org/)
+- [underscore](https://underscorejs.org/)
+- [sugar](https://sugarjs.com/)
+- [just](https://anguscroll.com/just/)
+- [motion](https://motion.dev/)
+- [rxjs](https://rxjs.dev/)
+- [lodash](https://lodash.com/)
+- [mathjs](https://mathjs.org/)
+- [ramda](https://ramdajs.com/)
+- [tempo](https://tempo.formkit.com/)
+- [dayjs](https://day.js.org/)
+- [moment](https://momentjs.com/)
+- [temporal](https://tc39.es/proposal-temporal/docs/index.html)
