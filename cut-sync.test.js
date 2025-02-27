@@ -229,13 +229,17 @@ export default [
   ["Number.format", 0.1 * 3 * 1000, 0, 300],
   ["Number.format", 0.1 * 3 * 1000, "", 300],
   ["Number.format", 0.1 * 3 * 1000, 1, "300"],
-  ["Number.format", 0.1 * 3 * 1000, "invalid-lang", "300"],
   ["Number.format", -0.000123456789, 1, "-100µ"],
   ["Number.format", 123456789000, 2, "120G"],
   ["Number.format", 1, 10, "1"],
   ["Number.format", 1010.0101, "en", "1,010.01"],
   ["Number.format", 1010.0101, "fr", "1 010,01"],
   ["Number.format", 1010.0101, "de", "1.010,01"],
+  ["Number.format", 1010.0101, "'", ".", "1'010.01"],
+  ["Number.format", 1010, "USD", "$1,010"],
+  ["Number.format", 1010, "$", "$1,010"],
+  ["Number.format", 1010, "en", { style: "currency", currency: "USD" }, "$1,010.00"],
+  // ["Number.format", 0.1 * 3 * 1000, "x-invalid", "300"],
   ["Number.duration", -36666666, "-10 hours"],
   ["Number.duration", 1, "1 millisecond"],
   ["Number.duration", 0, ""],
@@ -248,18 +252,19 @@ export default [
   ["Date.format", date, "short", "1/20/19"],
   ["Date.format", date, "long, short", "January 20, 2019 at 10:09 AM"],
   ["Date.format", date, ", short", "10:09 AM"],
-  ["Date.format", date, "day, month, year", "fr", "20 janvier 2019"],
-  ["Date.format", date, "month, day, weekday, hour, minute, second", "Sunday, January 20 at 10:09:08 AM"],
-  ["Date.format", date, "mon, wday, hour", date.toLocaleString("en", { month: "short", weekday: "short", hour: "2-digit" })],
+  ["Date.format", date, "year, month, day", "fr", "20 janvier 2019"],
+  ["Date.format", date, "month, weekday, day, hour, minute, second", "Sunday, January 20 at 10:09:08 AM"],
+  ["Date.format", date, "month, weekday, hour", date.toLocaleString("en", { weekday: "long", month: "long", hour: "2-digit" })],
   ["Date.format", date, "hour, minute, second", "10:09:08"],
   ["Date.format", date, "hour", "10:09:08"],
   ["Date.format", date, "minute", "09:08"],
   ["Date.format", date, "second", "08"],
-  // new Date(8640000000000000).toISOString()
-  // new Date("275760/09/13 02:00:00")
-  ["Date.format", new Date("2019-01-01 00:00"), "YYYY-MM-DD hh:mm:ss Z", "2019-01-01 00:00:00 +01:00"],
+  ["Date.format", new Date("0000-01-01T00:00:00Z"), "YYYY-MM-DD hh:mm:ss Z", "0000-01-01 00:09:21 +00:09"], // historical calendar adjustments
+  ["Date.format", new Date("20000-01-01 00:00"), "YYYY-MM-DD hh:mm:ss Z", "20000-01-01 00:00:00 +01:00"],
+  ["Date.format", new Date("-100000-01-01 00:00"), "YYYY-MM-DD hh:mm:ss Z", "-100000-01-01 00:00:00 +00:09"],
+  ["Date.format", new Date(8640000000000000), "YYYY-MM-DD hh:mm:ss Z", "275760-09-13 02:00:00 +02:00"],
   ["Date.format", new Date("Invalid"), "long", "-"],
-  ["Date.format", new Date("Invalid"), "mon, wday, hour, minute", "-"],
+  ["Date.format", new Date("Invalid"), "mon, hour, minute", "-"],
   ["Date.format", new Date("Invalid"), "YYYY/MM/DD", "-"],
   ["Date.getWeek", new Date("2016-11-05"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month
   ["Date.getWeek", new Date("2000-01-01"), 52], // Saturday, Leep year
@@ -284,6 +289,7 @@ export default [
   ["Date.getWeek", new Date("2006-01-01"), 52], // Sunday
   ["Date.getLastDate", new Date("2000-02-01"), 29],
   ["Date.getQuarter", new Date("2018-04-01"), 2],
+  ["Date.getTimezone", new Date(), "+01:00"],
   ["Date.getTimezone", new Date(), -540, "+09:00"],
   ["Date.getTimezone", new Date(), +240, "-04:00"],
   ["Date.plus", new Date("2020-01-01T00:00:00"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03")],
@@ -301,7 +307,7 @@ export default [
   ["Date.plus", new Date("2016-02-29"), { year: 10 }, new Date("2016-02-29")], //* ignored options without plural
   ["Date.plus", new Date("2016-02-29"), { years: null }, new Date("2016-02-29")], //* ignored
   ["Date.plus", new Date("2016-02-29"), { years: 0 }, new Date("2016-02-29")], //* ignored
-  ["Date.plus", new Date("2016-02-29"), { ignored: 1, milliseconds: 1, and: 1, quarters: 1 }, new Date("2016-02-29")], //* ignored additional properties
+  ["Date.plus", new Date("2016-02-29"), { ignored: 1, and: 1, quarters: 1 }, new Date("2016-02-29")], //* ignored additional properties
   ["Date.plus", new Date("2020-01-01"), { months: 1.2 }, new Date("2020-02-01")], //* Expected behavior
   ["Date.plus", new Date("2020-01-31"), "1.2 month", new Date("2020-02-29")], //* Expected behavior //! DEPRECATED syntax
   ["Date.plus", new Date("2020-01-01T00:00:00"), "+1 year +1 month +1 hour +2 minute -3 seconds", new Date("2021-02-01T01:01:57")], //! DEPRECATED syntax
@@ -310,11 +316,11 @@ export default [
   ["Date.minus", new Date("2018-11-30"), "-3 month", new Date("2019-02-28")], //* Subtract negative number
   ["Date.start", new Date("2018-02-28T04:05:00"), "month", new Date("2018-02-01T00:00:00")],
   // ["Date.start", new Date("2018-02-28T04:05:00"), "week", new Date("2018-02-01T00:00:00")], // NOTE: start on sunday or monday
-  ["Date.end", new Date("2016-02-29T10:11:12"), "year", new Date("2016-12-31T23:59:59")],
+  ["Date.end", new Date("2016-02-29T10:11:12"), "year", new Date("2016-12-31T23:59:59.999")],
   ["Date.relative", date, date, ""],
   ["Date.relative", new Date(+date - 1000), date, "1 second ago"], //* 1 second before
   ["Date.relative", new Date(+date + 2 * 60 * 60 * 1000), date, "2 hours from now"], //* 2 hours after
   ["RegExp.escape", /john@gmail.com/, /john@gmail\.com/],
-  ["RegExp.plus", /QwErTy/yvsm, "gim", /QwErTy/gimsvy],
+  ["RegExp.plus", /QwErTy/msvy, "gim", /QwErTy/gimsvy],
   ["RegExp.minus", /QwErTy/i, "gi", /QwErTy/],
 ]

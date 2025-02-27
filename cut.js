@@ -206,20 +206,25 @@ function string_format(str, ...args) {
 // Number
 function number_duration(num) {
   if (!num) return ""
-  const units = UNITS.slice().reverse()
+  const units = DATE.slice().reverse()
   const [k, v] = units.find(([k, v]) => v && v <= Math.abs(num) * 1.1)
   return Math.round(+num / +v) + " " + k + (Math.abs(Math.round(+num / +v)) > 1 ? "s" : "")
 }
-function number_format(num, format, options) {
-  if (format && typeof format === "string") return Intl.NumberFormat(format, options).format(num)
-  if (format && typeof format === "number")
-    return num
-      .toExponential(format - 1)
-      .replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || ""))
-  return +(+num.toPrecision(15)).toFixed(15)
+const CURRENCY = Intl.supportedValuesOf("currency")
+CURRENCY.forEach((k) => {
+  const symbol = new Intl.NumberFormat("en", { style: "currency", currency: k }).format(0)[0]
+  CURRENCY[k] = k
+  CURRENCY[symbol] = k
+})
+function number_format(num, v0, v1) {
+  if (!v0) return +(+num.toPrecision(15)).toFixed(15)
+  if (typeof v0 === "number") return num.toExponential(v0 - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
+  if (typeof v1 === "string") return num.toLocaleString("en").replace(/,/g, v0).replace(/\./, v1)
+  if (CURRENCY[v0]) return Intl.NumberFormat("en", { style: "currency", currency: CURRENCY[v0], minimumFractionDigits: 0 }).format(num)
+  if (typeof v0 === "string") return Intl.NumberFormat(v0, v1).format(num)
 }
 // Date
-const UNITS = [
+const DATE = [
   ["millisecond", 1, "S", "Milliseconds", 3],
   ["second", 1000, "s", "Seconds"],
   ["minute", 1000 * 60, "m", "Minutes"],
@@ -231,13 +236,13 @@ const UNITS = [
   ["year", 1000 * 60 * 60 * 24 * 365, "Y", "FullYear", 4],
   ["timezone", null, "Z", "Timezone"],
 ]
-UNITS.map(([k, v]) => (UNITS[k.toUpperCase()] = v))
+DATE.forEach(([k, v]) => (DATE[k.toUpperCase()] = v))
 function date_relative(from, to = new Date()) {
   return number_duration(+from - +to).replace(/^-?(.+)/, (m, d) => d + (m[0] === "-" ? " ago" : " from now"))
 }
 function date_getWeek(date) {
   const soy = new Date(date.getFullYear(), 0, 1)
-  const doy = Math.floor((+date - +soy) / UNITS.DAY) + 1
+  const doy = Math.floor((+date - +soy) / DATE.DAY) + 1
   const dow = date.getDay() || 7
   return Math.floor((10 + doy - dow) / 7) || date_getWeek(new Date(date.getFullYear(), 0, 0))
 }
@@ -251,23 +256,22 @@ function date_getTimezone(date, offset = date.getTimezoneOffset()) {
   return `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`
 }
 function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
+  if (isNaN(date.getTime())) return "-"
   const parts = format.split(",").map((v) => v.trim())
   if (parts.some((v) => ["full", "long", "medium", "short"].includes(v))) return date.toLocaleString(lang, { dateStyle: parts[0] || undefined, timeStyle: parts[1] })
-  if (parts.some((v) => ["year", "month", "mon", "day", "weekday", "wday", "hour", "minute", "second"].includes(v))) {
+  if (parts.some((v) => ["year", "month", "weekday", "day", "hour", "minute", "second"].includes(v))) {
     const options = {}
-    if (parts.includes("second")) options.second = "2-digit"
-    if (parts.includes("minute")) options.minute = "2-digit"
-    if (parts.includes("hour")) options.hour = "2-digit"
-    if (parts.includes("wday")) options.weekday = "short"
+    if (parts.includes("year")) options.year = "numeric"
+    if (parts.includes("month")) options.month = "long"
     if (parts.includes("weekday")) options.weekday = "long"
     if (parts.includes("day")) options.day = "numeric"
-    if (parts.includes("mon")) options.month = "short"
-    if (parts.includes("month")) options.month = "long"
-    if (parts.includes("year")) options.year = "numeric"
-    if (!options.day && !options.month && !options.year) return date_format(date, (options.hour && "hh:mm:ss") || (options.minute && "mm:ss") || "ss")
+    if (parts.includes("hour")) options.hour = "2-digit"
+    if (parts.includes("minute")) options.minute = "2-digit"
+    if (parts.includes("second")) options.second = "2-digit"
+    if (!options.year && !options.month && !options.day) return date_format(date, (options.hour && "hh:mm:ss") || (options.minute && "mm:ss") || "ss")
     return date.toLocaleString(lang, options)
   }
-  return UNITS.reduce((str, [k, v, letter, jsfn, zeros = 2]) => {
+  return DATE.reduce((str, [k, v, letter, jsfn, zeros = 2]) => {
     return str.replace(RegExp(letter + "+", "g"), (m) => {
       if (letter === "Z") return date_getTimezone(date)
       if (letter === "W") return "W" + date_getWeek(date)
@@ -275,6 +279,7 @@ function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
       let int = date["get" + jsfn]()
       if (letter === "M") int = int + 1
       if (m.length > zeros) return ("0".repeat(zeros) + int).slice(-zeros) + letter
+      if (m.length < `${int}`.length) return int
       return ("0".repeat(zeros) + int).slice(-m.length)
     })
   }, format)
@@ -283,15 +288,15 @@ function date_modify(date, options, sign) {
   if (!options || !sign) return date
   if (typeof options === "string") {
     options = { str: options }
-    options.str.replace(/([+-.\d]*)\s*(second|minute|hour|day|month|year)s?/gi, (m, n, u) => (options[u + "s"] = +n || 1 - +(n === "0")))
+    options.str.replace(/([+-.\d]*)\s*(millisecond|second|minute|hour|day|month|year)s?/gi, (m, n, u) => (options[u + "s"] = +n || 1 - +(n === "0")))
   }
   options = Object.fromEntries(
     Object.entries(options)
-      .filter(([k, v]) => ["seconds", "minutes", "hours", "days", "months", "years"].includes(k))
+      .filter(([k, v]) => ["milliseconds", "seconds", "minutes", "hours", "days", "months", "years"].includes(k))
       .map(([k, v]) => [k, Math.round(+v)])
   )
   const d = new Date(date)
-  const units = UNITS.filter((unit) => ["second", "minute", "hour", "day", "month", "year"].includes(unit[0]))
+  const units = DATE.filter((unit) => ["millisecond", "second", "minute", "hour", "day", "month", "year"].includes(unit[0]))
   const fn = {
     "+": (unit, n) => d["set" + unit[3]](d["get" + unit[3]]() + n),
     "-": (unit, n) => d["set" + unit[3]](d["get" + unit[3]]() - n),
@@ -304,12 +309,11 @@ function date_modify(date, options, sign) {
       units
         .slice(0, index)
         .reverse()
-        .map((unit) => d["set" + unit[3]]({ Month: 11, Date: date_getLastDate(d), Hours: 23, Minutes: 59, Seconds: 59 }[unit[3]]))
+        .map((unit) => d["set" + unit[3]]({ Month: 11, Date: date_getLastDate(d), Hours: 23, Minutes: 59, Seconds: 59, Milliseconds: 999 }[unit[3]]))
     },
   }[sign]
   units.forEach((unit) => options[unit[0] + "s"] && fn(unit, options[unit[0] + "s"]))
-  d.setMilliseconds(0)
-  if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[k + "s"]) && !["day", "hour", "minute", "second"].some((k) => options[k + "s"])) d.setDate(0)
+  if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[k + "s"]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[k + "s"])) d.setDate(0) // prettier-ignore
   if (date.getTimezoneOffset() !== d.getTimezoneOffset()) return new Date(+d + (date.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000)
   return d
 }
@@ -485,7 +489,7 @@ function cut(...args) {
     })
     cut("shortcut", "format", {
       after(v) {
-        if (/(Invalid Date|NaN|null|undefined)/.test(v)) return "-"
+        if (/^(Invalid Date|NaN|null|undefined)/.test(v)) return "-"
         return v
       },
     })
