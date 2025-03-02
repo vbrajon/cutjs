@@ -1,5 +1,5 @@
-import testsSync from "./cut-sync.test.js"
-import testsAsync from "./cut-async.test.js"
+import testsSync from "./cut-sync-test.js"
+import testsAsync from "./cut-async-test.js"
 // import cut from "./cut.js"
 export const packages = [
   {

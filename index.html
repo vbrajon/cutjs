@@ -21,7 +21,7 @@
 <script type="module">
   import { codeToHtml } from "https://esm.sh/shiki@1.0.0"
   import cut from "./cut.js?window+prototype"
-  import tests from "./cut-core.test.js"
+  import tests from "./cut-core-test.js"
   window.$ = (selector, root = document) => root.querySelector(selector)
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -38,9 +38,10 @@
   reload()
   async function run(code) {
     try {
-      code = code.replace(/^import /gm, "// import ")
+      code = code.replace(/^import /gm, "// import ") // ignore imports
+      code = code.split(/^\/\/.*\n/m).at(-1) // take the section after the last comment
       if (code.includes("await")) return { data: await eval(`(async () => {\n${code.replace(/(.*)$/, (m) => "return " + m)}\n})()`) }
-      const constant = (/const (\w+) = (.*)/.exec(code.split("\n").at(-1)) || ["", ""])[1]
+      const constant = (/const (\w+) = .*$/.exec(code) || ["", ""])[1]
       return { data: await eval(`${code}\n${constant}`) }
     } catch (error) {
       const expected = code.split("\n").at(-1).split(" //! ")[1]
@@ -54,11 +55,14 @@
     const { data, error } = await run(code)
     if (line.includes("//!") && data) return { line: line.replace("//!", "//✗"), data, error }
     if (line.includes("//!")) return { line: line.replace("//!", "//✓"), data, error }
-    const expected = line.split("//= ")[1]
     const str = stringify(data)
     const com = line + " //> " + str.replace(/\n/g, "\\n")
+    const expected = line.split("//= ")[1]
     if (expected === str) return { line: line.replace("//=", "//✓"), data, error }
     if (expected) return { line: line.replace("//=", "//✗"), data, error }
+    const approx = line.split("//~ ")[1]
+    if (approx && new RegExp(approx.replace(/([\\/'*+?|()[\]{}.^$-])/g, "\\$1").replace(/(\\.\\.\\.|…)/g, ".*")).test(str)) return { line: line.replace("//~", "//✓"), data, error } // prettier-ignore
+    if (approx) return { line: line.replace("//~", "//✗"), data, error }
     if (data == null || line.includes("//")) return { line, data, error }
     return { line, data, error, com }
   }
@@ -75,7 +79,7 @@
     const code = (await info.map((v) => v.com || v.line).join("\n")) + "\n"
     const html = await codeToHtml(code, { lang: "js", theme: "github-dark" })
     $(".editor pre").outerHTML = html.replace(/style="[^"]*"/, `style="grid-column:1;grid-row:1;"`).replace(/tabindex="0"/, "")
-    $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "#f34", "=": "orange", "✓": "#7d0", "✗": "#f34" }[el.textContent.trim()[2]] || "#6A737D"}`))
+    $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "#f34", "=": "orange", "✓": "#7d0", "✗": "#f34", ">": "#666" }[el.textContent.trim()[2]] || "#789"}`))
     $('span[style="color:#7d0"]').textContent = code.split("//✓").length - 1
     $('span[style="color:#f34"]').textContent = (code.split("//✗").length - 1 || "") + (error?.error ? "!" : "")
   }
@@ -91,7 +95,7 @@
     const imp = `import { ${Object.keys(cut[cname] || {}).join(", ")} } from "cut"\n\n`
     const testfn = tests
       .filter((t) => t.name && t.name.split(".")[0] === cname)
-      .map((t, i) => `const test${i} = ${t.fn.toString()}\nawait test${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
+      .map((t, i) => `// ${t.name}\nconst test${i} = ${t.fn.toString()}\nawait test${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
       .join("\n")
     if (testfn) return refresh(imp + testfn)
     const teststr = tests

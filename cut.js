@@ -255,6 +255,10 @@ function date_getLastDate(date) {
 function date_getTimezone(date, offset = date.getTimezoneOffset()) {
   return `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`
 }
+function date_setTimezone(date, timezone = "+00:00") {
+  const offset = +timezone.slice(0, 3) * 60 + +timezone.slice(4)
+  return new Date(+date + (offset + date.getTimezoneOffset()) * 60 * 1000)
+}
 function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
   if (isNaN(date.getTime())) return "-"
   const parts = format.split(",").map((v) => v.trim())
@@ -331,13 +335,16 @@ function date_end(date, options) {
 }
 // RegExp
 function regexp_escape(re) {
-  return RegExp(re.source.replace(/([\\/'*+?|()[\]{}.^$-])/g, "\\$1"), re.flags)
+  return new RegExp(re.source.replace(/([\\/'*+?|()[\]{}.^$-])/g, "\\$1"), re.flags)
+}
+function regexp_replace(re, a, b) {
+  return new RegExp(re.source.replace(a, b), re.flags)
 }
 function regexp_plus(re, flags) {
-  return RegExp(re.source, [...new Set(re.flags + flags)].sort().join(""))
+  return new RegExp(re.source, [...new Set(re.flags + flags)].sort().join(""))
 }
 function regexp_minus(re, flags) {
-  return RegExp(re.source, [...new Set(re.flags.replace(new RegExp(`[${flags}]`, "g"), ""))].sort().join(""))
+  return new RegExp(re.source, [...new Set(re.flags.replace(new RegExp(`[${flags}]`, "g"), ""))].sort().join(""))
 }
 // Core
 function cut(...args) {
@@ -547,6 +554,7 @@ function cut(...args) {
     cut(Date, "getQuarter", date_getQuarter)
     cut(Date, "getLastDate", date_getLastDate)
     cut(Date, "getTimezone", date_getTimezone)
+    cut(Date, "setTimezone", date_setTimezone)
     cut(Date, "format", date_format)
     cut(Date, "modify", date_modify)
     cut(Date, "plus", date_plus)
@@ -554,6 +562,7 @@ function cut(...args) {
     cut(Date, "start", date_start)
     cut(Date, "end", date_end)
     cut(RegExp, "escape", regexp_escape)
+    cut(RegExp, "replace", regexp_replace)
     cut(RegExp, "plus", regexp_plus)
     cut(RegExp, "minus", regexp_minus)
   }

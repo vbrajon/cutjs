@@ -266,32 +266,38 @@ export default [
   ["Date.format", new Date("Invalid"), "long", "-"],
   ["Date.format", new Date("Invalid"), "mon, hour, minute", "-"],
   ["Date.format", new Date("Invalid"), "YYYY/MM/DD", "-"],
-  ["Date.getWeek", new Date("2016-11-05"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month
-  ["Date.getWeek", new Date("2000-01-01"), 52], // Saturday, Leep year
-  ["Date.getWeek", new Date("2000-01-02"), 52],
-  ["Date.getWeek", new Date("2000-01-03"), 1],
-  ["Date.getWeek", new Date("2000-01-04"), 1],
-  ["Date.getWeek", new Date("2000-01-11"), 2],
-  ["Date.getWeek", new Date("2000-01-19"), 3],
-  ["Date.getWeek", new Date("2000-01-27"), 4],
-  ["Date.getWeek", new Date("2000-02-04"), 5],
-  ["Date.getWeek", new Date("2000-02-12"), 6],
-  ["Date.getWeek", new Date("2000-09-17"), 37],
-  ["Date.getWeek", new Date("2000-12-17"), 50],
-  ["Date.getWeek", new Date("2000-12-24"), 51],
-  ["Date.getWeek", new Date("2000-12-31"), 52],
-  ["Date.getWeek", new Date("2001-01-01"), 1], // Monday
-  ["Date.getWeek", new Date("2002-01-01"), 1], // Tuesday
-  ["Date.getWeek", new Date("2003-01-01"), 1], // Wednesday
-  ["Date.getWeek", new Date("2004-01-01"), 1], // Thursday, Leep year
-  ["Date.getWeek", new Date("2004-12-31"), 53], // Friday, Leep year
-  ["Date.getWeek", new Date("2005-01-01"), 53], // Saturday
-  ["Date.getWeek", new Date("2006-01-01"), 52], // Sunday
-  ["Date.getLastDate", new Date("2000-02-01"), 29],
-  ["Date.getQuarter", new Date("2018-04-01"), 2],
+  ["Date.getWeek", new Date("2016-11-05T00:00:00"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month
+  ["Date.getWeek", new Date("2000-01-01T00:00:00"), 52], // Saturday, Leep year
+  ["Date.getWeek", new Date("2000-01-02T00:00:00"), 52],
+  ["Date.getWeek", new Date("2000-01-03T00:00:00"), 1],
+  ["Date.getWeek", new Date("2000-01-04T00:00:00"), 1],
+  ["Date.getWeek", new Date("2000-01-11T00:00:00"), 2],
+  ["Date.getWeek", new Date("2000-01-19T00:00:00"), 3],
+  ["Date.getWeek", new Date("2000-01-27T00:00:00"), 4],
+  ["Date.getWeek", new Date("2000-02-04T00:00:00"), 5],
+  ["Date.getWeek", new Date("2000-02-12T00:00:00"), 6],
+  ["Date.getWeek", new Date("2000-09-17T00:00:00"), 37],
+  ["Date.getWeek", new Date("2000-12-17T00:00:00"), 50],
+  ["Date.getWeek", new Date("2000-12-24T00:00:00"), 51],
+  ["Date.getWeek", new Date("2000-12-31T00:00:00"), 52],
+  ["Date.getWeek", new Date("2001-01-01T00:00:00"), 1], // Monday
+  ["Date.getWeek", new Date("2002-01-01T00:00:00"), 1], // Tuesday
+  ["Date.getWeek", new Date("2003-01-01T00:00:00"), 1], // Wednesday
+  ["Date.getWeek", new Date("2004-01-01T00:00:00"), 1], // Thursday, Leep year
+  ["Date.getWeek", new Date("2004-12-31T00:00:00"), 53], // Friday, Leep year
+  ["Date.getWeek", new Date("2005-01-01T00:00:00"), 53], // Saturday
+  ["Date.getWeek", new Date("2006-01-01T00:00:00"), 52], // Sunday
+  ["Date.getLastDate", new Date("2000-02-01T00:00:00"), 29],
+  ["Date.getQuarter", new Date("2018-04-01T00:00:00"), 2],
   ["Date.getTimezone", new Date(), "+01:00"],
   ["Date.getTimezone", new Date(), -540, "+09:00"],
-  ["Date.getTimezone", new Date(), +240, "-04:00"],
+  ["Date.setTimezone", new Date("2000-01-01T01:00:00Z"), new Date("2000-01-01T00:00:00Z")],
+  ["Date.setTimezone", new Date("2000-01-01T01:00:00Z"), "+01:00", new Date("2000-01-01T01:00:00Z")],
+  ["Date.setTimezone", new Date("2000-01-01T01:00:00Z"), "+05:00", new Date("2000-01-01T05:00:00Z")],
+  ["Date.setTimezone", new Date("2000-01-02T01:00:00Z"), "-05:00", new Date("2000-01-01T19:00:00Z")],
+  // ["Date.setTimezone", new Date("2000-01-01T01:00:00Z"), "Europe/Paris", new Date("2000-01-01T01:00:00Z")],
+  // new Date("2000").plus("3 millisecond") //= new Date("2000-01-01T00:00:01.003Z")
+  ["Date.plus", new Date("2000-01-01"), "3 millisecond", new Date("2000-01-01T00:00:00.003Z")],
   ["Date.plus", new Date("2020-01-01T00:00:00"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03")],
   ["Date.plus", new Date("2018-11-30"), { months: 3 }, new Date("2019-02-28")],
   ["Date.plus", new Date("2018-12-31"), { months: 1 }, new Date("2019-01-31")],
@@ -321,6 +327,7 @@ export default [
   ["Date.relative", new Date(+date - 1000), date, "1 second ago"], //* 1 second before
   ["Date.relative", new Date(+date + 2 * 60 * 60 * 1000), date, "2 hours from now"], //* 2 hours after
   ["RegExp.escape", /john@gmail.com/, /john@gmail\.com/],
+  ["RegExp.replace", /john@gmail.com/, "@", "|", /john|gmail.com/],
   ["RegExp.plus", /QwErTy/msvy, "gim", /QwErTy/gimsvy],
   ["RegExp.minus", /QwErTy/i, "gi", /QwErTy/],
 ]

@@ -31,21 +31,21 @@ new Date("2000").format("day, month, year", "en") //= "January 1, 2000"
 0.30000000000000004.format() //= 0.3
 123456.789.format(2) //= "120k"
 123456.789.format("en") //= "123,456.789"
+123456.789.format("$") //= "$123,456.79"
+123456.789.format("_", ".") //= "123_456.789"
 
 // Manipulate a Date
-new Date("2000").plus("3 millisecond") //= new Date("2000-01-01T00:00:01.000Z")
-new Date("2000").minus("1 year, 2 month") //= new Date("1998-11-01T00:00:00.000Z")
-new Date("2000").start("year") //= new Date("1999-12-31T23:00:00.000Z")
-new Date("2000").end("year") //= new Date("2000-12-31T22:59:59.000Z")
+new Date("2000").plus("1 month").end("month").format() //= "2000-02-29T23:59:59+01:00"
+new Date("2000").minus({ years: 1, months: 2 }).plus("1 year, 2 months") //= new Date("2000-01-01T00:00:00.000Z")
 
 // Manipulate an Object or Array
 const users = [
-  { name: "John", age: 25, city: "Paris" },
-  { name: "Jane", age: 30, city: "London" },
-  { name: "Jack", age: 14, city: "New York" },
-] //
-const usersByCity = users.group("city") //~ {"Paris":[{name:"John",age:25,...}]}
-const avgAgeByCity = usersByCity.map((g) => g.mean("age")) //~ {"Paris":25...}
+  { name: "John", age: 30, city: "London" },
+  { name: "Jane", age: 14, city: "New York" },
+  { name: "Jean", age: 35, city: "Paris" },
+]
+const usersByCity = users.sort("-age").group("city") //~ {"Paris":[{"name":"Jean","age":35...}
+const avgAgeByCity = usersByCity.map((g) => g.mean("age")) //~ {"Paris":35...}
 
 // Add a Function
 cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
@@ -91,7 +91,7 @@ invalid.transpose() //! Not a matrix
 ## Development
 
 ```bash
-bun --watch cut.test.js
+bun --watch cuttest.run.js
 ```
 
 ## Roadmap
