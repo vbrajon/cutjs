@@ -14,8 +14,17 @@
 
 <!-- prettier-ignore -->
 ```js
-// Import cut, and optionally expose functions in window or extend prototypes
+// Classical use
+import { map } from "cut"
+map({ a: 1 }, (v) => v + 1) //= {"a":2}
+
+// Proxy use, access .data or .error
+import cut from "cut"
+cut({ a: 1 }).map((v) => v + 1).data //= {"a":2}
+
+// Prototypes, call directly on the object
 import "cut?window+prototype"
+({ a: 1 }).map((v) => v + 1) //= {"a":2}
 
 // Format a Date
 new Date("2000").format() //= "2000-01-01T01:00:00+01:00"

@@ -349,24 +349,34 @@ function regexp_minus(re, flags) {
 // Core
 function cut(...args) {
   init()
-  // if (args.length === 1) return wrap(...args)
+  if (args.length === 1) return wrap(...args)
   if (args[0] === "mode") return mode(...args)
   if (args[0] === "shortcut") return shortcut(...args)
   return fn(...args)
-  // function wrap(x) {
-  //   const cname = x?.constructor.name
-  //   return new Proxy(
-  //     { x },
-  //     {
-  //       get(target, prop, receiver) {
-  //         if (x.hasOwnProperty(prop)) return x[prop]
-  //         if (prop === "_") return x
-  //         const f = cut[cname][prop]
-  //         if (f) return (...args) => wrap(f(x, ...args))
-  //       },
-  //     }
-  //   )
-  // }
+  function wrap(initial, path = [], result) {
+    const proxy = new Proxy(() => {}, {
+      get(target, prop) {
+        if (result) return result[prop]
+        if (prop === "data" || prop === "error") {
+          try {
+            const data = path.reduce((a, p) => (p instanceof Array ? a[p[0]](...p.slice(1)) : a[p]), initial)
+            result = { data, initial, path }
+            return result[prop]
+          } catch (error) {
+            result = { error, initial, path }
+            return result[prop]
+          }
+        }
+        path.push(prop)
+        return proxy
+      },
+      apply(target, that, args) {
+        path.push([path.pop(), ...args])
+        return proxy
+      },
+    })
+    return proxy
+  }
   function mode(_, mode) {
     if (!mode) return
     cut.mode = mode
