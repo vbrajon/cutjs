@@ -353,25 +353,30 @@ function cut(...args) {
   if (args[0] === "mode") return mode(...args)
   if (args[0] === "shortcut") return shortcut(...args)
   return fn(...args)
-  function wrap(initial, path = [], result) {
+  function wrap(initial) {
+    const result = { data: initial, path: [initial] }
     const proxy = new Proxy(() => {}, {
       get(target, prop) {
-        if (result) return result[prop]
-        if (prop === "data" || prop === "error") {
-          try {
-            const data = path.reduce((a, p) => (p instanceof Array ? a[p[0]](...p.slice(1)) : a[p]), initial)
-            result = { data, initial, path }
-            return result[prop]
-          } catch (error) {
-            result = { error, initial, path }
-            return result[prop]
-          }
+        if (prop === "then" || prop === "catch") return (resolve) => resolve(result)
+        if (prop === "data" || prop === "error" || prop === "path") return result[prop]
+        result.path.push(prop)
+        if (result.error) return proxy
+        try {
+          if (result.data[prop] instanceof Function) result.data = result.data[prop].bind(result.data)
+          else result.data = result.data[prop]
+        } catch (error) {
+          result.error = error
         }
-        path.push(prop)
         return proxy
       },
       apply(target, that, args) {
-        path.push([path.pop(), ...args])
+        result.path.push(args)
+        if (result.error) return proxy
+        try {
+          result.data = result.data(...args)
+        } catch (error) {
+          result.error = error
+        }
         return proxy
       },
     })
@@ -579,5 +584,5 @@ function cut(...args) {
 }
 cut("mode", import.meta.url.split("?")[1] || "default")
 export default cut
-const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, modify, plus, minus, start, end, escape } = cut // prettier-ignore
-export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, modify, plus, minus, start, end, escape } // prettier-ignore
+const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, modify, plus, minus, start, end, escape, replace } = cut // prettier-ignore
+export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, modify, plus, minus, start, end, escape, replace } // prettier-ignore

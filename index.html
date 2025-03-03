@@ -44,8 +44,7 @@
       const constant = (/const (\w+) = .*$/.exec(code) || ["", ""])[1]
       return { data: await eval(`${code}\n${constant}`) }
     } catch (error) {
-      const expected = code.split("\n").at(-1).split(" //! ")[1]
-      if (expected === error.message) return {}
+      if (code.split("\n").at(-1).includes("//! ")) return { data: error }
       return { error }
     }
   }
@@ -53,8 +52,9 @@
     if (!line || line.startsWith("//")) return { line }
     const code = all.slice(0, i + 1).join("\n")
     const { data, error } = await run(code)
-    if (line.includes("//!") && data) return { line: line.replace("//!", "//✗"), data, error }
-    if (line.includes("//!")) return { line: line.replace("//!", "//✓"), data, error }
+    const errored = line.split("//! ")[1]
+    if (errored && errored === data?.message) return { line: line.replace("//!", "//✓"), data, error }
+    if (errored) return { line: line.replace("//!", "//✗"), data, error }
     const str = stringify(data)
     const com = line + " //> " + str.replace(/\n/g, "\\n")
     const expected = line.split("//= ")[1]
@@ -81,7 +81,7 @@
     $(".editor pre").outerHTML = html.replace(/style="[^"]*"/, `style="grid-column:1;grid-row:1;"`).replace(/tabindex="0"/, "")
     $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => (el.style = `color:${{ "!": "#f34", "=": "orange", "✓": "#7d0", "✗": "#f34", ">": "#666" }[el.textContent.trim()[2]] || "#789"}`))
     $('span[style="color:#7d0"]').textContent = code.split("//✓").length - 1
-    $('span[style="color:#f34"]').textContent = (code.split("//✗").length - 1 || "") + (error?.error ? "!" : "")
+    $('span[style="color:#f34"]').textContent = code.split("//✗").length - 1 + code.split("//!").length - 1 || ""
   }
   function reload() {
     const colors = ["#fff", "#abc", "#fd0", "#f34", "#39f", "#fa3", "#7d0", "#f6e", "#3df"]

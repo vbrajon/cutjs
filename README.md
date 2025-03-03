@@ -14,15 +14,16 @@
 
 <!-- prettier-ignore -->
 ```js
-// Classical use
+// Normal use
 import { map } from "cut"
 map({ a: 1 }, (v) => v + 1) //= {"a":2}
 
 // Proxy use, access .data or .error
 import cut from "cut"
 cut({ a: 1 }).map((v) => v + 1).data //= {"a":2}
+cut({ a: 1 }).x.y.error.message //= "Cannot read properties of undefined (reading 'y')"
 
-// Prototypes, call directly on the object
+// Prototype use, call directly on the object
 import "cut?window+prototype"
 ({ a: 1 }).map((v) => v + 1) //= {"a":2}
 
