@@ -354,29 +354,34 @@ function cut(...args) {
   if (args[0] === "shortcut") return shortcut(...args)
   return fn(...args)
   function wrap(initial) {
-    const result = { data: initial, path: [initial] }
+    let result
+    const path = [initial]
     const proxy = new Proxy(() => {}, {
       get(target, prop) {
-        if (prop === "then" || prop === "catch") return (resolve) => resolve(result)
-        if (prop === "data" || prop === "error" || prop === "path") return result[prop]
-        result.path.push(prop)
-        if (result.error) return proxy
-        try {
-          if (result.data[prop] instanceof Function) result.data = result.data[prop].bind(result.data)
-          else result.data = result.data[prop]
-        } catch (error) {
-          result.error = error
+        if (result) return result[prop]
+        if (prop === "then") return (resolve) => resolve(path)
+        if (prop === "path") return path
+        if (prop === "data" || prop === "error") {
+          try {
+            let data = initial
+            for (const p of path.slice(1)) {
+              if (p instanceof Array) {
+                if (data[p[0]]) data = data[p[0]](...p[1])
+                else data = cut[p[0]](data, ...p[1])
+              } else data = data[p]
+            }
+            result = { data, path }
+            return result[prop]
+          } catch (error) {
+            result = { error, path }
+            return result[prop]
+          }
         }
+        path.push(prop)
         return proxy
       },
       apply(target, that, args) {
-        result.path.push(args)
-        if (result.error) return proxy
-        try {
-          result.data = result.data(...args)
-        } catch (error) {
-          result.error = error
-        }
+        path.push([path.pop(), args])
         return proxy
       },
     })
@@ -487,11 +492,12 @@ function cut(...args) {
         function f(fn) {
           if (fn == null) return defaultSort
           if (fn instanceof Array) return multiSort(fn.map(f))
-          if (typeof fn === "function" && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
-          if (typeof fn === "function") return fn
-          if (typeof fn === "string" && typeof args[0][0] === "string") return Intl.Collator(fn, { numeric: true, ...args[2] }).compare
+          if (fn instanceof Function && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
+          if (fn instanceof Function) return fn
+          if (fn instanceof Object) return Intl.Collator(fn.locale, { ...fn, numeric: true }).compare
           return directedSort(fn)
         }
+        // NOTE: do slice even if native behavior // if (args.length === 1 || (args[1] instanceof Function && args[1].length !== 1)) return args
         args[0] = args[0].slice()
         args[1] = f(args[1])
         return args
@@ -527,7 +533,7 @@ function cut(...args) {
     cut(Object, "values", "native")
     cut(Object, "entries", "native")
     cut(Object, "fromEntries", "native")
-    cut(Object, "map", object_map)
+    cut(Object, "map", object_map) // TODO: try to make this shortcut only and/or for all "Iterable"
     cut(Object, "reduce", object_reduce)
     cut(Object, "filter", object_filter)
     cut(Object, "find", object_find)

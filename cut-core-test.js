@@ -8,11 +8,16 @@ export const packages = [
     import: (version) => import("./cut.js?window+prototype"),
     fn: (module, name) => {
       const [cname, fname] = name.split(".")
-      return (x, ...args) => (x == null ? cut[cname][fname](x, ...args) : x[fname](...args))
+      return (x, ...args) => {
+        if (x && x[fname]) return x[fname](...args)
+        return cut[cname][fname](x, ...args)
+      }
     },
   },
 ]
-export default testsSync.concat(testsAsync).concat([
+export default [
+  ...testsSync,
+  ...testsAsync,
   {
     name: "core.noMutation",
     fn: () => {
@@ -88,4 +93,44 @@ export default testsSync.concat(testsAsync).concat([
       if (a[0] === 3) throw new Error("Array.reverse does not mutate the array")
     },
   },
-])
+  {
+    name: "core.wrap",
+    fn: () => {
+      const initial = { a: 1 }
+      // 1. Wrap
+      {
+        const { data, error } = cut(initial).map((v) => v + 1).a
+        if (data !== 2) throw new Error("Data not 2")
+        if (error) throw new Error("Error thrown")
+      }
+
+      // 2. Wrap with error
+      {
+        const { data, error } = cut(initial).a.b.c
+        if (data) throw new Error("Data with error")
+        if (!error) throw new Error("Error not thrown")
+      }
+
+      // 3. Wrap and access path
+      const wrap = cut(initial)
+      if (wrap.path[0] !== initial) throw new Error("Path not valid")
+      wrap.map((v) => v + 1)
+      if (wrap.path.length !== 2) throw new Error("Path not valid")
+      wrap.a.b.c
+      if (wrap.path.length !== 5) throw new Error("Path not valid")
+      const { data, error } = wrap
+      if (wrap.path.length !== 5) throw new Error("Path not valid")
+      if (!error) throw new Error("Error not thrown") // undefined is not an object (evaluating 'data[p]')
+      if (data) throw new Error("Data with error")
+
+      // 4. Careful, it throws once .data or .error are accessed
+      let err
+      try {
+        wrap.a.b // throws
+      } catch (e) {
+        err = e
+      }
+      if (!err) throw new Error("Throws once .data or .error are accessed")
+    },
+  },
+]

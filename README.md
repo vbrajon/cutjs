@@ -21,7 +21,7 @@ map({ a: 1 }, (v) => v + 1) //= {"a":2}
 // Proxy use, access .data or .error
 import cut from "cut"
 cut({ a: 1 }).map((v) => v + 1).data //= {"a":2}
-cut({ a: 1 }).x.y.error.message //= "Cannot read properties of undefined (reading 'y')"
+cut({ a: 1 }).x.y.error //= new Error()
 
 // Prototype use, call directly on the object
 import "cut?window+prototype"
@@ -101,19 +101,19 @@ invalid.transpose() //! Not a matrix
 ## Development
 
 ```bash
-bun --watch cuttest.run.js
+bun --watch cutest.run.js
 ```
 
 ## Roadmap
 
 - [x] Interactive Docs & Tests: https://raw.githack.com/vbrajon/rawjs/cut/index.html
+- [ ] Replace cutest by bun test
 - [ ] Every Array Fn
 - [ ] Every Iterator (Async, or Generator)
-- [ ] Replace cutest by bun test
 - [ ] Typescript
 - [ ] Monaco Editor
-- [ ] Blog Post / Hacker News / Product Hunt
 - [ ] Collaboration / Multiplayer / CTRL-S to PR
+- [ ] Blog Post / Hacker News / Product Hunt
 
 ---
 

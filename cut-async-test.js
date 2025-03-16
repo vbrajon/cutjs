@@ -19,7 +19,7 @@ export default [
       // if (n !== 2) throw new Error(`Function.every should yield next result and be called 2 times, n = ${n}`)
       // await loop
       // if (n !== 3) throw new Error(`Function.every should have been called 3 times, n = ${n}`)
-      // await loop //! should not hang
+      // await loop // should not hang
       // if (n !== 3) throw new Error(`Function.every should have been called 3 times, n = ${n}`)
     },
   },

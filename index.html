@@ -92,17 +92,16 @@
       else el.style = `color:${colors[i]}8;`
     })
     const cname = location.hash.slice(1)
-    const imp = `import { ${Object.keys(cut[cname] || {}).join(", ")} } from "cut"\n\n`
-    const testfn = tests
-      .filter((t) => t.name && t.name.split(".")[0] === cname)
-      .map((t, i) => `// ${t.name}\nconst test${i} = ${t.fn.toString()}\nawait test${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
-      .join("\n")
-    if (testfn) return refresh(imp + testfn)
+    const imp = `import { ${Object.keys(cut[cname] || {}).join(", ")} } from "cut"`
     const teststr = tests
       .filter((t) => t[0] && t[0].split(".")[0] === cname)
       .map((t, i) => `${t[0].split(".")[1]}(${t.slice(1, -1).map(stringify).join(", ")}) //= ${stringify(t.at(-1))}`)
       .join("\n")
-    if (teststr) return refresh(imp + teststr)
+    const testfn = tests
+      .filter((t) => t.name && t.name.split(".")[0] === cname)
+      .map((t, i) => `// ${t.name}\nconst test${i} = ${t.fn.toString()}\nawait test${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
+      .join("\n")
+    if (teststr || testfn) return refresh([imp, teststr, testfn].filter(Boolean).join("\n\n") + "\n")
     return refresh(EXEMPLE)
   }
   function stringify(v) {
@@ -131,7 +130,7 @@
     return String(v)
   }
 </script>
-<!-- <script src="https://unpkg.com/@tailwindcss/browser@4"></script> -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
 <style>
   /*! tailwindcss v4.0.9 | MIT License | https://tailwindcss.com */
   @layer theme, base, components, utilities;

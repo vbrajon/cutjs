@@ -5,8 +5,6 @@ const users = [
   { name: "Johnny Doe", age: 71, birthdate: new Date("Feb 26, 1932") },
 ]
 const user = users[0]
-const userAges = users.map((v) => v.age)
-const userAgesAsc = [users[1], users[2], users[0], users[3]]
 const str = "i_am:\nThe1\tAND, Only."
 const date = new Date("2019-01-20T10:09:08")
 const mixed = [[], -1, /a/gi, 0, Infinity, NaN, new Date("2020"), { a: [{ b: 1 }] }, "a", false, null, true, undefined]
@@ -106,21 +104,33 @@ export default [
   ["Array.group", [{ a: 1 }], "b", { undefined: [{ a: 1 }] }],
   ["Array.group", [{ a: 1, b: 2 }, { a: 1, b: 2 }], ["a", "b"], { 1: { 2: [{ a: 1, b: 2 }, { a: 1, b: 2 }] } }], // prettier-ignore
   ["Array.reverse", [1, 2, 3], [3, 2, 1]],
-  ["Array.sort", userAges, [22, 22, 29, 71]],
-  ["Array.sort", users, "age", userAgesAsc],
-  ["Array.sort", users, (v) => v.age, userAgesAsc],
-  ["Array.sort", users, (a, b) => (a.age === b.age ? 0 : a.age > b.age ? 1 : -1), userAgesAsc],
-  ["Array.sort", users, function() { return arguments[0].age === arguments[1].age ? 0 : arguments[0].age > arguments[1].age ? 1 : -1 }, userAgesAsc], // prettier-ignore
+  ["Array.sort", users.map((v) => v.age), [1, 2, 0, 3].map((i) => users[i].age)],
+  ["Array.sort", users, "age", [1, 2, 0, 3].map((i) => users[i])],
+  ["Array.sort", users, "age", [1, 2, 0, 3].map((i) => users[i])],
+  ["Array.sort", users, (v) => v.age, [1, 2, 0, 3].map((i) => users[i])],
+  ["Array.sort", users, (a, b) => (a.age === b.age ? 0 : a.age > b.age ? 1 : -1), [1, 2, 0, 3].map((i) => users[i])],
+  ["Array.sort", users, function() { return arguments[0].age === arguments[1].age ? 0 : arguments[0].age > arguments[1].age ? 1 : -1 }, [1, 2, 0, 3].map((i) => users[i])], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [0, -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [v => v[0], -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [4, 5], [[null, 1], [1, 2], [null, 3]]], // prettier-ignore
-  ["Array.sort", ["10 arbres", "3 arbres", "réservé", "Cliché", "Premier", "communiqué", "café", "Adieu"], "fr", { numeric: true }, ["3 arbres", "10 arbres", "Adieu", "café", "Cliché", "communiqué", "Premier", "réservé"]], // prettier-ignore
-  ["Array.unique", userAges, [29, 22, 71]],
-  ["Array.sum", userAges, 144],
-  ["Array.min", userAges, 22],
-  ["Array.max", userAges, 71],
-  ["Array.mean", userAges, 36],
-  ["Array.median", userAges, 25.5],
+  ["Array.sort", ["10 arbres", "3 arbres", "cafetière", "Café", "café", "Adieu"], { locale: "fr" }, ["3 arbres", "10 arbres", "Adieu", "café", "Café", "cafetière"]],
+  {
+    name: "Array.sort",
+    fn: (fn) => {
+      const arr = Array.from({ length: 1e5 }, (v, i) => Math.random())
+      performance.mark("A")
+      fn(arr)
+      performance.mark("B")
+      return performance.measure("sort", "A", "B").duration < 100
+    },
+    output: true,
+  },
+  ["Array.unique", users.map((v) => v.age), [29, 22, 71]],
+  ["Array.sum", users.map((v) => v.age), 144],
+  ["Array.min", users.map((v) => v.age), 22],
+  ["Array.max", users.map((v) => v.age), 71],
+  ["Array.mean", users.map((v) => v.age), 36],
+  ["Array.median", users.map((v) => v.age), 25.5],
   ["Array.median", [1, 2, 3], 2],
   {
     name: "Function.decorate",

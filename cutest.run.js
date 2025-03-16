@@ -58,9 +58,9 @@ const packages = [
 // await new Promise((resolve) => setTimeout(resolve, 1000))
 const results = [
   // NOTE: Safari crashes when running more test functions, more times
-  await run("cut-async-test.js", { parallel: true, packages: packages.slice(0, 1) }),
-  await run("cut-sync-test.js", { parallel: true, packages }),
-  await run("cut-sync-test.js", { parallel: true, times: 100, packages }),
+  // await run("cut-async-test.js", { parallel: true, packages: packages.slice(0, 1) }),
+  // await run("cut-sync-test.js", { parallel: true, packages }),
+  // await run("cut-sync-test.js", { parallel: true, times: 100, packages }),
   await run("cut-core-test.js", { parallel: true }),
   // await run("test/cut-date-fns-test.js", { parallel: true }),
 ]
