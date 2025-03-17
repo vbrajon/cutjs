@@ -25,6 +25,8 @@
   window.$ = (selector, root = document) => root.querySelector(selector)
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  window.cache = {}
+  window.tests = tests
   const README = await fetch("README.md").then((res) => res.text())
   const EXEMPLE = /```js\n([\s\S]*?)```/.exec(README)[1]
   const textarea = $(".editor textarea")
@@ -37,15 +39,16 @@
   $(".z-10").innerHTML += `<div class="ml-auto px-2 py-1 font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
   reload()
   async function run(code) {
+    code = code.replace(/^import /gm, "// import ") // ignore imports
+    code = code.split(/^\/\/.*/m).at(-1) // take the section after the last comment
+    if (cache[code]) return cache[code]
     try {
-      code = code.replace(/^import /gm, "// import ") // ignore imports
-      code = code.split(/^\/\/.*\n/m).at(-1) // take the section after the last comment
-      if (code.includes("await")) return { data: await eval(`(async () => {\n${code.replace(/(.*)$/, (m) => "return " + m)}\n})()`) }
+      if (code.includes("await")) return cache[code] = { data: await eval(`(async () => {\n${code.replace(/(.*)$/, (m) => "return " + m)}\n})()`) }
       const constant = (/const (\w+) = .*$/.exec(code) || ["", ""])[1]
-      return { data: await eval(`${code}\n${constant}`) }
+      return cache[code] = { data: await eval(`${code}\n${constant}`) }
     } catch (error) {
       if (code.split("\n").at(-1).includes("//! ")) return { data: error }
-      return { error }
+      return cache[code] = { error }
     }
   }
   async function comment(line, i, all) {
@@ -99,7 +102,7 @@
       .join("\n")
     const testfn = tests
       .filter((t) => t.name && t.name.split(".")[0] === cname)
-      .map((t, i) => `// ${t.name}\nconst test${i} = ${t.fn.toString()}\nawait test${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
+      .map((t, i) => `// ${t.name}\nconst test${i} = ${stringify(t.fn)}\nawait test${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
       .join("\n")
     if (teststr || testfn) return refresh([imp, teststr, testfn].filter(Boolean).join("\n\n") + "\n")
     return refresh(EXEMPLE)
@@ -124,7 +127,8 @@
       if (v instanceof constructor) return `new ${constructor.name}()`
       if (v === constructor) return `${constructor.name}`
     }
-    if (v instanceof Function) return v.toString()
+    const trim = code => code.split("\n").map((l, i, a) => i ? l.slice(Math.min(...a.slice(1).filter(l => l.trim()).map(l => l.match(/^\s*/)[0].length))) : l).join("\n") // prettier-ignore
+    if (v instanceof Function) return trim(v.toString())
     if (v instanceof Array) return `[${v.map(stringify).join(",")}]`
     if (v instanceof Object) return `{${Object.entries(v).map(([k, v]) => `${JSON.stringify(k)}:${stringify(v)}`).join(",")}}` // prettier-ignore
     return String(v)

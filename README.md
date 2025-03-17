@@ -108,25 +108,19 @@ bun --watch cutest.run.js
 
 - [x] Interactive Docs & Tests: https://raw.githack.com/vbrajon/rawjs/cut/index.html
 - [ ] Replace cutest by bun test
-- [ ] Every Array Fn
-- [ ] Every Iterator (Async, or Generator)
-- [ ] Typescript
+- [ ] Iterator or AsyncIterator
+- [ ] Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
+- [ ] Typescript / TSDoc
 - [ ] Monaco Editor
 - [ ] Collaboration / Multiplayer / CTRL-S to PR
 - [ ] Blog Post / Hacker News / Product Hunt
 
 ---
 
-- [date-fns](https://date-fns.org/)
-- [underscore](https://underscorejs.org/)
-- [sugar](https://sugarjs.com/)
-- [just](https://anguscroll.com/just/)
-- [motion](https://motion.dev/)
-- [rxjs](https://rxjs.dev/)
-- [lodash](https://lodash.com/)
+- [lodash](https://lodash.com/) or [underscore](https://underscorejs.org/) or [just](https://anguscroll.com/just/) or [sugar](https://sugarjs.com/)
+- [date-fns](https://date-fns.org/) or [moment](https://momentjs.com/) or [dayjs](https://day.js.org/) or [tempo](https://tempo.formkit.com/)
+- [ixjs](https://github.com/ReactiveX/IxJS) or [rxjs](https://rxjs.dev/)
 - [mathjs](https://mathjs.org/)
-- [ramda](https://ramdajs.com/)
-- [tempo](https://tempo.formkit.com/)
-- [dayjs](https://day.js.org/)
-- [moment](https://momentjs.com/)
-- [temporal](https://tc39.es/proposal-temporal/docs/index.html)
+- [xstate](https://xstate.js.org/)
+- [motion](https://motion.dev/)
+- [microdiff](https://github.com/AsyncBanana/microdiff)

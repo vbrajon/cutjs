@@ -73,8 +73,19 @@ export default [
   ["Generic.transform", { a: 1 }, (v) => v * 2, { a: 2 }], //* equivalent to map when depth = 1
   ["Generic.transform", { a: 1, b: { c: 2, d: [3] } }, (v) => v * 2, { a: 2, b: { c: 4, d: [6] } }],
   ["Generic.transform", { a: 1, b: { c: 2, d: [3] } }, (v, path) => `${path.join(".")}=${v}`, { a: "a=1", b: { c: "b.c=2", d: ["b.d.0=3"] } }],
-  // Object.difference
-
+  {
+    name: "Generic.transform",
+    fn: (fn) => {
+      // Object.difference
+      const o1 = { a: { b: [1, 2, 3] } }
+      const o2 = { a: { b: [1, 2, 4, 5] } }
+      const diff = []
+      transform(o1, (v, path) => equal(v, access(o2, path)) || diff.push(path.join('.')))
+      transform(o2, (v, path) => equal(v, access(o1, path)) || diff.push(path.join('.')))
+      return diff.unique().length === 2
+    },
+    output: true,
+  },
   ["Object.keys", user, ["name", "age"]],
   ["Object.values", user, ["John Doe", 29]],
   ["Object.entries", user, [["name", "John Doe"], ["age", 29]]], // prettier-ignore
