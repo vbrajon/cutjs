@@ -22,6 +22,8 @@
   import { codeToHtml } from "https://esm.sh/shiki@1.0.0"
   import cut from "./cut.js?window+prototype"
   import tests from "./cut-core-test.js"
+  window.encode = text => btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  window.decode = hash => atob(hash.replace(/-/g, '+').replace(/_/g, '/'))
   window.$ = (selector, root = document) => root.querySelector(selector)
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -71,6 +73,7 @@
   }
   async function refresh(text) {
     if (typeof text === "string") textarea.value = text
+    else location.hash = encode(textarea.value)
     const info = await Promise.all(textarea.value.split("\n").map(comment))
     const error = info.findLast((v) => v.hasOwnProperty("error"))
     $(".editor").style = "outline: 1px solid rgb(255 255 255 / 5%);outline-offset: -1px;"
@@ -94,18 +97,19 @@
       if (el === link) el.style = `color:${colors[i]};border-color: ${colors[i]}1;border-bottom: 2px solid ${colors[i]};background: #FFFFFF10`
       else el.style = `color:${colors[i]}8;`
     })
-    const cname = location.hash.slice(1)
-    const imp = `import { ${Object.keys(cut[cname] || {}).join(", ")} } from "cut"`
+    const hash = location.hash.slice(1)
+    if (!hash) return refresh(EXEMPLE)
+    if (hash && !cut[hash]) return refresh(decode(hash))
+    const imp = `import { ${Object.keys(cut[hash] || {}).join(", ")} } from "cut"`
     const teststr = tests
-      .filter((t) => t[0] && t[0].split(".")[0] === cname)
+      .filter((t) => t[0] && t[0].split(".")[0] === hash)
       .map((t, i) => `${t[0].split(".")[1]}(${t.slice(1, -1).map(stringify).join(", ")}) //= ${stringify(t.at(-1))}`)
       .join("\n")
     const testfn = tests
-      .filter((t) => t.name && t.name.split(".")[0] === cname)
+      .filter((t) => t.name && t.name.split(".")[0] === hash)
       .map((t, i) => `// ${t.name}\nconst test${i} = ${stringify(t.fn)}\nawait test${i}(${t.name.split(".")[1].split(" ")[0]}) //= ${stringify(t.output)}`)
       .join("\n")
-    if (teststr || testfn) return refresh([imp, teststr, testfn].filter(Boolean).join("\n\n") + "\n")
-    return refresh(EXEMPLE)
+    return refresh([imp, teststr, testfn].filter(Boolean).join("\n\n") + "\n")
   }
   function stringify(v) {
     if (v === undefined) return "undefined"

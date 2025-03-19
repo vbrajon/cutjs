@@ -110,6 +110,7 @@ bun --watch cutest.run.js
 - [ ] Replace cutest by bun test
 - [ ] Iterator or AsyncIterator
 - [ ] Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
+- [ ] Fuzzy tests
 - [ ] Typescript / TSDoc
 - [ ] Monaco Editor
 - [ ] Collaboration / Multiplayer / CTRL-S to PR
