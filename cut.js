@@ -177,12 +177,13 @@ function string_upper(str) {
 function string_capitalize(str) {
   return str.toLowerCase().replace(/./, (c) => c.toUpperCase())
 }
-function string_words(str, sep = /[-_,.\s]/) {
+function string_words(str) {
   return str
-    .normalize("NFKD")
-    .replace(RegExp("[^A-z0-9" + sep.source.slice(1, -1) + "]", "g"), "")
-    .replace(/([a-z])([A-Z\d])/g, "$1 $2")
-    .split(sep)
+    .replace(/[^\p{L}\d]/gu, " ")
+    .replace(/(\p{Ll})(\p{Lu})/gu, "$1 $2")
+    .replace(/(\p{L})(\d)/gu, "$1 $2")
+    .replace(/(\d)(\p{L})/gu, "$1 $2")
+    .split(" ")
     .filter((x) => x)
 }
 function string_format(str, ...args) {
@@ -190,7 +191,7 @@ function string_format(str, ...args) {
   if (["-", "dash"].includes(args[0])) args[0] = "kebab"
   if (["_", "underscore"].includes(args[0])) args[0] = "snake"
   if (["title", "pascal", "camel", "kebab", "snake"].includes(args[0])) {
-    let words = string_words(str.toLowerCase())
+    let words = string_words(str).map((v) => v.toLowerCase())
     if (args[0] === "camel") return string_format(str, "pascal").replace(/./, (c) => c.toLowerCase())
     if (["title", "pascal"].includes(args[0])) words = words.map((v) => v.replace(/./, (c) => c.toUpperCase()))
     const sep = { kebab: "-", snake: "_", pascal: "" }[args[0]] ?? " "

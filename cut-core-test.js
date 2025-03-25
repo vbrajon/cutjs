@@ -1,17 +1,72 @@
 import testsSync from "./cut-sync-test.js"
 import testsAsync from "./cut-async-test.js"
-// import cut from "./cut.js"
+// const registry = "https://registry.npmjs.org/"
+// const versionList = async (pkg) => Object.keys((await (await fetch(registry + pkg)).json()).versions).reverse()
 export const packages = [
   {
     name: "cut",
     versions: ["latest"],
-    import: (version) => import("./cut.js?window+prototype"),
+    import: (version) => import("./cut"),
+    fn: (module, name) => {
+      const [cname, fname] = name.split(".")
+      return module[fname]
+    },
+  },
+  {
+    name: "cut?window+prototype",
+    versions: ["latest"],
+    import: (version) => import("./cut?window+prototype"),
     fn: (module, name) => {
       const [cname, fname] = name.split(".")
       return (x, ...args) => {
         if (x && x[fname]) return x[fname](...args)
         return cut[cname][fname](x, ...args)
       }
+    },
+  },
+  {
+    name: "vanilla",
+    versions: ["es2022"],
+    import: (version) => import("@js-temporal/polyfill"),
+    fn: (module, name) => {
+      const { Temporal } = module
+      return {
+        "Object.map": (obj, fn) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, fn(v, k, obj)])),
+        "Object.filter": (obj, fn) => Object.fromEntries(Object.entries(obj).filter(([k, v]) => fn(v, k, obj))),
+        "Object.find": (obj, fn) => obj[Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks))],
+        "Object.findIndex": (obj, fn) => Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks)),
+        "Date.getWeek": (date) => Temporal.PlainDate.from({ year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }).weekOfYear,
+      }[name]
+    },
+  },
+  {
+    name: "lodash-es",
+    // versions: (await versionList("lodash-es"))
+    //   .filter((v) => v.startsWith("4"))
+    //   .reverse()
+    //   .slice(-1)
+    //   .reverse(),
+    versions: ["4.17.21"],
+    import: (version) => import("lodash-es"),
+    fn: (module, name) => {
+      return {
+        // "Generic.access": module.get,
+        // "Generic.equal": module.isEqual,
+        "Object.map": (...args) => (args[0].constructor === Object ? module.mapValues(...args) : module.map(...args)),
+        "Object.filter": (...args) => (args[0].constructor === Object ? module.pickBy(...args) : module.filter(...args)),
+        "Object.find": module.find,
+        "Object.findIndex": module.findKey,
+        "Object.reduce": module.reduce,
+        "String.lower": module.toLower,
+        "String.upper": module.toUpper,
+        "String.capitalize": module.capitalize,
+        "String.words": module.words,
+        // "Function.decorate": module.flow,
+        // "Function.promisify": module.bind,
+        // "Function.partial": module.partial,
+        // "Function.memoize": module.memoize,
+        // "RegExp.escape": module.escapeRegExp,
+      }[name]
     },
   },
 ]

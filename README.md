@@ -101,13 +101,14 @@ invalid.transpose() //! Not a matrix
 ## Development
 
 ```bash
-bun --watch cutest.run.js
+bun i @js-temporal/polyfill lodash-es
+bun test --watch --coverage
 ```
 
 ## Roadmap
 
 - [x] Interactive Docs & Tests: https://raw.githack.com/vbrajon/rawjs/cut/index.html
-- [ ] Replace cutest by bun test
+- [x] Replace cutest by bun test
 - [ ] Iterator or AsyncIterator
 - [ ] Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
 - [ ] Fuzzy tests
