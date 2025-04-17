@@ -3,40 +3,71 @@ import testsAsync from "./cut-async-test.js"
 // const registry = "https://registry.npmjs.org/"
 // const versionList = async (pkg) => Object.keys((await (await fetch(registry + pkg)).json()).versions).reverse()
 export const packages = [
+  // {
+  //   name: "cut",
+  //   versions: ["latest"],
+  //   import: async (version) => {
+  //     const module = await import("./cut")
+  //     const cut = module.default
+  //     const fns = {}
+  //     for (const cname in cut.constructors) {
+  //       for (const fname in cut[cname]) {
+  //         fns[fname] = module[fname]
+  //         fns[`${cname}.${fname}`] = cut[cname][fname]
+  //       }
+  //     }
+  //     return fns
+  //   },
+  // },
+  // {
+  //   name: "cut-wrap",
+  //   versions: ["latest"],
+  //   import: async (version) => {
+  //     const module = await import("./cut")
+  //     const cut = module.default
+  //     const fns = {}
+  //     for (const cname in cut.constructors) {
+  //       for (const fname in cut[cname]) {
+  //         fns[fname] = fns[`${cname}.${fname}`] = (x, ...args) => cut(x)[fname](...args).data
+  //       }
+  //     }
+  //     return fns
+  //   },
+  // },
   {
-    name: "cut",
+    name: "cut-proto",
     versions: ["latest"],
-    import: (version) => import("./cut"),
-    fn: (module, name) => {
-      const [cname, fname] = name.split(".")
-      return module[fname]
-    },
-  },
-  {
-    name: "cut?window+prototype",
-    versions: ["latest"],
-    import: (version) => import("./cut?window+prototype"),
-    fn: (module, name) => {
-      const [cname, fname] = name.split(".")
-      return (x, ...args) => {
-        if (x && x[fname]) return x[fname](...args)
-        return cut[cname][fname](x, ...args)
+    import: async (version) => {
+      await import("./cut?window+prototype")
+      const fns = {}
+      for (const cname in cut.constructors) {
+        for (const fname in cut[cname]) {
+          fns[fname] = (x, ...args) => {
+            if (x && x[fname]) return x[fname](...args)
+            return cut[fname](x, ...args)
+          }
+          fns[`${cname}.${fname}`] = (x, ...args) => {
+            if (x && x[fname]) return x[fname](...args)
+            return cut[cname][fname](x, ...args)
+          }
+        }
       }
+      fns.core = () => {}
+      return fns
     },
   },
   {
     name: "vanilla",
     versions: ["es2022"],
-    import: (version) => import("@js-temporal/polyfill"),
-    fn: (module, name) => {
-      const { Temporal } = module
+    import: async (version) => {
+      const { Temporal } = await import("@js-temporal/polyfill")
       return {
         "Object.map": (obj, fn) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, fn(v, k, obj)])),
         "Object.filter": (obj, fn) => Object.fromEntries(Object.entries(obj).filter(([k, v]) => fn(v, k, obj))),
         "Object.find": (obj, fn) => obj[Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks))],
         "Object.findIndex": (obj, fn) => Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks)),
         "Date.getWeek": (date) => Temporal.PlainDate.from({ year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }).weekOfYear,
-      }[name]
+      }
     },
   },
   {
@@ -47,26 +78,51 @@ export const packages = [
     //   .slice(-1)
     //   .reverse(),
     versions: ["4.17.21"],
-    import: (version) => import("lodash-es"),
-    fn: (module, name) => {
-      return {
+    import: async (version) => {
+      const module = await import("lodash-es")
+      const fns = {
+        // "Generic.is": (...args) => module[`is${args[1]?.name.replace(/./, (c) => c.toUpperCase())}`](...args),
         // "Generic.access": module.get,
-        // "Generic.equal": module.isEqual,
+        "Generic.equal": (...args) => (args[0] instanceof Function ? args[0].toString() === args[1].toString() : module.isEqual(...args)),
+        // "Generic.transform": module.transform,
+        "Object.keys": module.keys,
+        "Object.values": module.values,
+        "Object.entries": module.toPairs,
+        "Object.fromEntries": module.fromPairs,
         "Object.map": (...args) => (args[0].constructor === Object ? module.mapValues(...args) : module.map(...args)),
         "Object.filter": (...args) => (args[0].constructor === Object ? module.pickBy(...args) : module.filter(...args)),
         "Object.find": module.find,
         "Object.findIndex": module.findKey,
         "Object.reduce": module.reduce,
-        "String.lower": module.toLower,
-        "String.upper": module.toUpper,
-        "String.capitalize": module.capitalize,
-        "String.words": module.words,
+        "Array.map": module.map,
+        "Array.filter": module.filter,
+        "Array.find": module.find,
+        "Array.findIndex": module.findIndex,
+        "Array.reduce": module.reduce,
+        "Array.group": module.groupBy,
+        "Array.sort": module.sortBy,
+        "Array.reverse": module.reverse,
+        "Array.unique": module.uniq,
+        "Array.sum": module.sum,
+        "Array.min": module.min,
+        "Array.max": module.max,
+        "Array.mean": module.mean,
+        "Array.median": module.median,
         // "Function.decorate": module.flow,
         // "Function.promisify": module.bind,
         // "Function.partial": module.partial,
         // "Function.memoize": module.memoize,
-        // "RegExp.escape": module.escapeRegExp,
-      }[name]
+        "String.lower": module.toLower,
+        "String.upper": module.toUpper,
+        "String.capitalize": module.capitalize,
+        "String.words": module.words,
+        "RegExp.escape": (...args) => RegExp(module.escapeRegExp(...args).slice(1, -1)),
+      }
+      for (const name in fns) {
+        const [cname, fname] = name.split(".")
+        fns[fname] = fns[name]
+      }
+      return fns
     },
   },
 ]
@@ -74,7 +130,7 @@ export default [
   ...testsSync,
   ...testsAsync,
   {
-    name: "core.noMutation",
+    name: "core - noMutation",
     fn: () => {
       const a = [3, 1, 2]
       a.reverse()
@@ -91,7 +147,7 @@ export default [
     },
   },
   {
-    name: "core.setup",
+    name: "core - setup",
     fn: () => {
       // cut.Object.fake = () => 1 / 3
       // cut.shortcuts.fake = { after: (v) => Math.round(v * 100) }
@@ -131,7 +187,7 @@ export default [
     },
   },
   {
-    name: "core.cleanup",
+    name: "core - cleanup",
     fn: () => {
       for (let property in { a: 1 }) if (property !== "a") throw new Error(`Enumerable property ${property} still exists`)
       // if (Number.abs !== Math.abs) throw new Error("Number.abs !== Math.abs")
@@ -149,7 +205,7 @@ export default [
     },
   },
   {
-    name: "core.wrap",
+    name: "core - wrap",
     fn: () => {
       const initial = { a: 1 }
       // 1. Wrap

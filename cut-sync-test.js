@@ -75,7 +75,7 @@ export default [
   ["Generic.transform", { a: 1, b: { c: 2, d: [3] } }, (v, path) => `${path.join(".")}=${v}`, { a: "a=1", b: { c: "b.c=2", d: ["b.d.0=3"] } }],
   {
     name: "Generic.transform",
-    fn: (fn, { transform, equal, access, unique }) => {
+    fn: ({ transform, equal, access, unique }) => {
       // Object.difference
       const o1 = { a: { b: [1, 2, 3] } }
       const o2 = { a: { b: [1, 2, 4, 5] } }
@@ -100,8 +100,6 @@ export default [
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], "a", [1, 3]], // prettier-ignore
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], ["a", "b"], [[1, 2], [3, 4]]], // prettier-ignore
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], { a: "b" }, [{ a: 2 }, { a: 4 }]], // prettier-ignore
-  ["Array.reduce", users, (acc, v, i) => acc.concat(i), [], [0, 1, 2, 3]],
-  ["Array.reduce", users, (acc, v, i) => ((acc[i] = v), acc), [], users],
   ["Array.filter", [null, "a", undefined, /a/], ["a", /a/]],
   ["Array.filter", users, { name: /Ja/ }, [{ name: "Jane Doe", age: 22 }, { name: "Janette Doe", age: 22 }]], // prettier-ignore
   ["Array.filter", users, "name", users],
@@ -110,6 +108,8 @@ export default [
   ["Array.find", [{ a: 1 }], { a: 1 }, { a: 1 }],
   ["Array.find", [{ a: 1 }, { a: 2 }], { a: [2, 3] }, { a: 2 }],
   ["Array.findIndex", [{ a: 1 }], { a: 1 }, 0],
+  ["Array.reduce", users, (acc, v, i) => acc.concat(i), [], [0, 1, 2, 3]],
+  ["Array.reduce", users, (acc, v, i) => ((acc[i] = v), acc), [], users],
   ["Array.group", users, (v) => "x", { x: users }],
   ["Array.group", [{ a: 1 }], "a", { 1: [{ a: 1 }] }],
   ["Array.group", [{ a: 1 }], "b", { undefined: [{ a: 1 }] }],
@@ -127,10 +127,10 @@ export default [
   ["Array.sort", ["10 arbres", "3 arbres", "cafetière", "Café", "café", "Adieu"], { locale: "fr" }, ["3 arbres", "10 arbres", "Adieu", "café", "Café", "cafetière"]],
   {
     name: "Array.sort",
-    fn: (fn) => {
+    fn: ({ sort }) => {
       const arr = Array.from({ length: 1e5 }, (v, i) => Math.random())
       performance.mark("A")
-      fn(arr)
+      sort(arr)
       performance.mark("B")
       return performance.measure("sort", "A", "B").duration < 100
     },
@@ -145,33 +145,33 @@ export default [
   ["Array.median", [1, 2, 3], 2],
   {
     name: "Function.decorate",
-    fn: (fn) => fn((x) => x)(1),
+    fn: ({ decorate }) => decorate((x) => x)(1),
     output: 1,
   },
   {
     name: "Function.decorate",
-    fn: (fn) => fn((x) => x, () => 2)(1), // prettier-ignore
+    fn: ({ decorate }) => decorate((x) => x, () => 2)(1), // prettier-ignore
     output: 2,
   },
   {
     name: "Function.decorate",
-    fn: (fn) => fn((x) => x, { around: (fn, x) => fn(x * 2) * 2 })(1),
+    fn: ({ decorate }) => decorate((x) => x, { around: (fn, x) => decorate(x * 2) * 2 })(1),
     output: 4,
   },
   {
     name: "Function.decorate",
-    fn: (fn) => fn((x) => x, { before: (x) => x * 2 })(1),
+    fn: ({ decorate }) => decorate((x) => x, { before: (x) => x * 2 })(1),
     output: 2,
   },
   {
     name: "Function.decorate",
-    fn: (fn) => fn((x) => x, { after: (x) => x * 2 })(1),
+    fn: ({ decorate }) => decorate((x) => x, { after: (x) => x * 2 })(1),
     output: 2,
   },
   {
     name: "Function.decorate",
-    fn: (fn) => {
-      const decorated = fn((x) => x, {})
+    fn: ({ decorate }) => {
+      const decorated = decorate((x) => x, {})
       decorated.around = (fn, x) => 10
       return decorated()
     },
@@ -179,32 +179,32 @@ export default [
   },
   {
     name: "Function.promisify",
-    fn: async (fn) => {
+    fn: async ({ promisify }) => {
       const expect1callback = (v, cb) => (v === 1 ? cb(null, "OK") : cb("KO", null))
-      const promisified = fn(expect1callback)
+      const promisified = promisify(expect1callback)
       if ((await promisified(1)) !== "OK") throw new Error("Function.promisify should resolve the callback with the first argument")
       if ((await promisified(2).catch((e) => e)) !== "KO") throw new Error("Function.promisify should reject the callback with the second argument")
     },
   },
   {
     name: "Function.partial",
-    fn: (fn) => fn((a, b) => [a, b], null, 2)(1),
+    fn: ({ partial }) => partial((a, b) => [a, b], null, 2)(1),
     output: [1, 2],
   },
   // {
   //   name: "Function.partial",
-  //   fn: (fn) => {
+  //   fn: ({ partial }) => {
   //     function yolo() {
   //       console.log("You only live once !")
   //     }
-  //     return fn(yolo).name
+  //     return partial(yolo).name
   //   },
   //   output: "partial_yolo",
   // },
   {
     name: "Function.memoize",
-    fn: (fn) => {
-      const memory = fn((x) => x / 2)
+    fn: ({ memoize }) => {
+      const memory = memoize((x) => x / 2)
       memory(2)
       memory(2)
       return memory.cache["[2]"]
@@ -216,14 +216,14 @@ export default [
   ["String.capitalize", "A.B", "A.b"],
   [
     "String.words",
-    "Title Case kebab-case snake_case camelCase PascalCase MiX123num456 UPPERlower lowerUPPER",
-    ["Title", "Case", "kebab", "case", "snake", "case", "camel", "Case", "Pascal", "Case", "Mi", "X", "123", "num", "456", "UPPERlower", "lower", "UPPER"],
+    "Title Case kebab-case snake_case camelCase PascalCase 12NUM34ber56 lowerUPPERlower",
+    ["Title", "Case", "kebab", "case", "snake", "case", "camel", "Case", "Pascal", "Case", "12", "NUM", "34", "ber", "56", "lower", "UPPERlower"],
   ],
   [
     "String.format",
-    "Title Case kebab-case snake_case camelCase PascalCase MiX123num456 UPPERlower lowerUPPER",
+    "Title Case kebab-case snake_case camelCase PascalCase 12NUM34ber56 lowerUPPERlower",
     "-",
-    "title-case-kebab-case-snake-case-camel-case-pascal-case-mi-x-123-num-456-upperlower-lower-upper",
+    "title-case-kebab-case-snake-case-camel-case-pascal-case-12-num-34-ber-56-lower-upperlower",
   ],
   ["String.format", str, "I Am The 1 And Only"], // "title" by default
   ["String.format", str, "-", "i-am-the-1-and-only"], // "dash"

@@ -2,18 +2,18 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 export default [
   {
     name: "Function.wait",
-    fn: async (fn) => {
+    fn: async ({ wait }) => {
       const start = Date.now()
-      const n = await fn(() => 1, 100)
+      const n = await wait(() => 1, 100)
       if (Date.now() - start < 100) throw new Error("Function.wait should wait 100ms")
       if (n !== 1) throw new Error("Function.wait should resolve the function and return 1")
     },
   },
   {
     name: "Function.every - limit",
-    fn: async (fn) => {
+    fn: async ({ every }) => {
       let n = 0
-      const loop = fn(() => n++, 100, 3) // immediate + runs every 100ms + stops after 3 times
+      const loop = every(() => n++, 100, 3) // immediate + runs every 100ms + stops after 3 times
       if (n !== 1) throw new Error(`Function.every should have been called immediately, n = ${n}`)
       await loop
       // if (n !== 2) throw new Error(`Function.every should yield next result and be called 2 times, n = ${n}`)
@@ -25,9 +25,9 @@ export default [
   },
   {
     name: "Function.every - stop",
-    fn: async (fn) => {
+    fn: async ({ every }) => {
       let n = 0
-      const loop = fn(() => n++, 100)
+      const loop = every(() => n++, 100)
       await sleep(280) // immediate + runs every 100ms + stops after 280ms
       loop.stop()
       if (n !== 3) throw new Error(`Function.every should have been called 3 times, n = ${n}`)
@@ -35,9 +35,9 @@ export default [
   },
   {
     name: "Function.debounce",
-    fn: async (fn) => {
+    fn: async ({ debounce }) => {
       let n = 0
-      const inc = fn((x) => (n += x), 100)
+      const inc = debounce((x) => (n += x), 100)
       inc(1) // skipped
       inc(2) // skipped
       inc(3) // delayed
@@ -48,9 +48,9 @@ export default [
   },
   {
     name: "Function.throttle",
-    fn: async (fn) => {
+    fn: async ({ throttle }) => {
       let n = 0
-      const inc = fn((x) => (n += x), 100)
+      const inc = throttle((x) => (n += x), 100)
       inc(1) // immediate
       inc(2) // skipped
       inc(3) // planned

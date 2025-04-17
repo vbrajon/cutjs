@@ -367,7 +367,7 @@ function cut(...args) {
             let data = initial
             for (const p of path.slice(1)) {
               if (p instanceof Array) {
-                if (data[p[0]]) data = data[p[0]](...p[1])
+                if (data?.[p[0]]) data = data[p[0]](...p[1])
                 else data = cut[p[0]](data, ...p[1])
               } else data = data[p]
             }
