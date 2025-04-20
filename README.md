@@ -28,9 +28,9 @@ import "cut?window+prototype"
 ({ a: 1 }).map((v) => v + 1) //= {"a":2}
 
 // Format a Date
-new Date("2000").format() //= "2000-01-01T01:00:00+01:00"
 new Date("2000").format("YYYY-QQ") //= "2000-Q1"
 new Date("2000").format("day, month, year", "en") //= "January 1, 2000"
+new Date("2000T00:00").format("full, short", "ja") //= "2000年1月1日土曜日 0:00"
 
 // Format a String
 "hello_world".format() //= "Hello World"
@@ -45,8 +45,8 @@ new Date("2000").format("day, month, year", "en") //= "January 1, 2000"
 123456.789.format("_", ".") //= "123_456.789"
 
 // Manipulate a Date
-new Date("2000").plus("1 month").end("month").format() //= "2000-02-29T23:59:59+01:00"
-new Date("2000").minus({ years: 1, months: 2 }).plus("1 year, 2 months") //= new Date("2000-01-01T00:00:00.000Z")
+new Date("2000").plus("1 month").end("month").format("YYYY-MM-DD hh:mm") //= "2000-02-29 23:59"
+new Date("2000").minus({ years: 1, months: 2 }).plus("1 year, 2 months").toISOString().slice(0, 10) //= "2000-01-01"
 
 // Manipulate an Object or Array
 const users = [
@@ -76,7 +76,7 @@ cut(Array, "swap", cut.Array.transpose)
 const matrix = [[1, 2, 3], [4, 5, 6]]
 matrix.swap() //= [[1,4],[2,5],[3,6]]
 const invalid = [[1], [2, 3]]
-invalid.transpose() //! Not a matrix
+invalid.transpose() //! Error: Not a matrix
 ```
 
 ## Functions

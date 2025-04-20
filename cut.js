@@ -319,7 +319,6 @@ function date_modify(date, options, sign) {
   }[sign]
   units.forEach((unit) => options[unit[0] + "s"] && fn(unit, options[unit[0] + "s"]))
   if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[k + "s"]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[k + "s"])) d.setDate(0) // prettier-ignore
-  if (date.getTimezoneOffset() !== d.getTimezoneOffset()) return new Date(+d + (date.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000)
   return d
 }
 function date_plus(date, options) {

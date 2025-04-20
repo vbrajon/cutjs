@@ -22,8 +22,8 @@
   import { codeToHtml } from "https://esm.sh/shiki@1.0.0"
   import cut from "./cut.js?window+prototype"
   import tests from "./cut-core-test.js"
-  window.encode = (text) => btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-  window.decode = (hash) => atob(hash.replace(/-/g, "+").replace(/_/g, "/"))
+  window.encode = (text) => { try { return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") } catch(e) { return "" } } // prettier-ignore
+  window.decode = (hash) => { try { return atob(hash.replace(/-/g, "+").replace(/_/g, "/")) } catch(e) { return "" } } // prettier-ignore
   window.$ = (selector, root = document) => root.querySelector(selector)
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -58,7 +58,7 @@
     const code = all.slice(0, i + 1).join("\n")
     const { data, error } = await run(code)
     const errored = line.split("//! ")[1]
-    if (errored && errored === data?.message) return { line: line.replace("//!", "//✓"), data, error }
+    if (errored && errored === data?.toString()) return { line: line.replace("//!", "//✓"), data, error }
     if (errored) return { line: line.replace("//!", "//✗"), data, error }
     const str = stringify(data)
     const com = line + " //> " + str.replace(/\n/g, "\\n")
@@ -79,8 +79,8 @@
     $(".editor").style = "outline: 1px solid rgb(255 255 255 / 5%);outline-offset: -1px;"
     if (error?.error) {
       $(".editor").style = "outline: 1px solid red;outline-offset: -1px;"
-      const errorInfo = info.find((v) => v.error?.message === error.error.message)
-      errorInfo.com = errorInfo.line + " //! " + errorInfo.error.message
+      const errorInfo = info.find((v) => v.error?.toString() === error.error.toString())
+      errorInfo.com = errorInfo.line + " //! " + errorInfo.error.toString()
     }
     const code = (await info.map((v) => v.com || v.line).join("\n")) + "\n"
     const html = await codeToHtml(code, { lang: "js", theme: "github-dark" })
@@ -124,13 +124,7 @@
     if (v === null) return "null"
     if (typeof v === "string") return JSON.stringify(v)
     if (typeof v === "number" || typeof v === "boolean") return String(v)
-    if (v instanceof Date) {
-      try {
-        return `new Date("${v.toISOString()}")`
-      } catch (error) {
-        return `new Date("Invalid Date")`
-      }
-    }
+    if (v instanceof Date) return +new Date(v.format()) ? `new Date("${v.format()}")` : `new Date(${+v})`
     if (v instanceof RegExp) return v.toString()
     for (const constructor of [Array, Boolean, Date, Error, Function, Number, Object, RegExp, String, Symbol]) {
       if (v === constructor) return `${constructor.name}`

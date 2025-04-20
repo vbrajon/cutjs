@@ -2,7 +2,10 @@ import { test, expect } from "bun:test"
 const files = ["cut-core-test.js"]
 
 globalThis.window = globalThis
-process.env.TZ = "Europe/Paris"
+// process.env.TZ = "America/Santiago" // UTC-3
+process.env.TZ = 'Atlantic/Azores'; // UTC-1 with DST to UTC+0
+// process.env.TZ = "Europe/Paris" // UTC+1 with DST to UTC+2
+// process.env.TZ = "Asia/Karachi" // UTC+5
 let name
 let i = 0
 for (const file of files) {

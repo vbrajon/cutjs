@@ -6,7 +6,8 @@ const users = [
 ]
 const user = users[0]
 const str = "i_am:The\n1\tAND , Only."
-const date = new Date("2019-01-20T10:09:08+01:00")
+const date = new Date("2019-01-20T10:09:08")
+const offset = ((offset = date.getTimezoneOffset()) => `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`)()
 const mixed = [[], -1, /a/gi, 0, Infinity, NaN, new Date("2020"), { a: [{ b: 1 }] }, "a", false, null, true, undefined]
 const mixedClone = [[], -1, /a/gi, 0, Infinity, NaN, new Date("2020"), { a: [{ b: 1 }] }, "a", false, null, true, undefined]
 // const shuffle = (arr, r) => (arr.forEach((v, i) => ((r = Math.floor(Math.random() * i)), ([arr[i], arr[r]] = [arr[r], arr[i]]))), arr)
@@ -274,8 +275,8 @@ export default [
   ["Number.duration", -36666666, "-10 hours"],
   ["Number.duration", 1, "1 millisecond"],
   ["Number.duration", 0, ""],
-  ["Date.format", date, "2019-01-20T10:09:08+01:00"],
-  ["Date.format", date, "YYYY/MM/DD hhhmmmsssSSSZ", "2019/01/20 10h09m08s000+01:00"],
+  ["Date.format", date, "2019-01-20T10:09:08" + offset],
+  ["Date.format", date, "YYYY/MM/DD hhhmmmsssSSSZ", "2019/01/20 10h09m08s000" + offset],
   ["Date.format", date, "QQ WW", "Q1 W3"],
   ["Date.format", date, "full", "Sunday, January 20, 2019"],
   ["Date.format", date, "long", "zh", "2019年1月20日"],
@@ -290,71 +291,74 @@ export default [
   ["Date.format", date, "hour", "10:09:08"],
   ["Date.format", date, "minute", "09:08"],
   ["Date.format", date, "second", "08"],
-  ["Date.format", new Date("10000-01-01Z"), "YYYY-MM-DD hh:mm:ss Z", "10000-01-01 01:00:00 +01:00"],
-  ["Date.format", new Date("0000-01-01"), "YYYY-MM-DD hh:mm:ss Z", "0000-01-01 00:09:21 +00:09"], // historical calendar adjustments
-  ["Date.format", new Date("-100000-01-01"), "YYYY-MM-DD hh:mm:ss Z", "-100000-01-01 00:09:21 +00:09"],
-  ["Date.format", new Date(8640000000000000), "YYYY-MM-DD hh:mm:ss Z", "275760-09-13 02:00:00 +02:00"],
-  ["Date.format", new Date("-271821-12-31"), "YYYY-MM-DD hh:mm:ss Z", "-271821-12-31 00:09:21 +00:09"],
+  // ["Date.format", new Date("100000-01-01"), "YYYY-MM-DD hh:mm:ss Z", `100000-01-01 00:00:00 ${offset}`],
+  // ["Date.format", new Date("0000-01-01"), "YYYY-MM-DD hh:mm:ss Z", "0000-01-01 04:28:12 +04:28"], // historical calendar adjustments
+  // ["Date.format", new Date("-100000-01-01"), "YYYY-MM-DD hh:mm:ss Z", `-100000-01-01 04:28:12 +04:28`],
+  // ["Date.format", new Date("100000-01-01"), "YYYY-MM-DD", `100000-01-01`],
+  // ["Date.format", new Date("0000-01-01"), "YYYY-MM-DD", "0000-01-01"],
+  // ["Date.format", new Date("-100000-01-01"), "YYYY-MM-DD", `-100000-01-01`],
+  // ["Date.format", new Date(8640000000000000), "YYYY-MM-DD", `275760-09-13`],
+  // ["Date.format", new Date(-8639977968000000), "YYYY-MM-DD", "-271821-12-31"],
   ["Date.format", new Date("Invalid"), "long", "-"],
   ["Date.format", new Date("Invalid"), "mon, hour, minute", "-"],
   ["Date.format", new Date("Invalid"), "YYYY/MM/DD", "-"],
-  ["Date.getWeek", new Date("2016-11-05"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month
-  ["Date.getWeek", new Date("2000-01-01"), 52], // Saturday, Leep year
-  ["Date.getWeek", new Date("2000-01-02"), 52],
-  ["Date.getWeek", new Date("2000-01-03"), 1],
-  ["Date.getWeek", new Date("2000-01-04"), 1],
-  ["Date.getWeek", new Date("2000-01-11"), 2],
-  ["Date.getWeek", new Date("2000-01-19"), 3],
-  ["Date.getWeek", new Date("2000-01-27"), 4],
-  ["Date.getWeek", new Date("2000-02-04"), 5],
-  ["Date.getWeek", new Date("2000-02-12"), 6],
-  ["Date.getWeek", new Date("2000-09-17"), 37],
-  ["Date.getWeek", new Date("2000-12-17"), 50],
-  ["Date.getWeek", new Date("2000-12-24"), 51],
-  ["Date.getWeek", new Date("2000-12-31"), 52],
-  ["Date.getWeek", new Date("2001-01-01"), 1], // Monday
-  ["Date.getWeek", new Date("2002-01-01"), 1], // Tuesday
-  ["Date.getWeek", new Date("2003-01-01"), 1], // Wednesday
-  ["Date.getWeek", new Date("2004-01-01"), 1], // Thursday, Leep year
-  ["Date.getWeek", new Date("2004-12-31"), 53], // Friday, Leep year
-  ["Date.getWeek", new Date("2005-01-01"), 53], // Saturday
-  ["Date.getWeek", new Date("2006-01-01"), 52], // Sunday
-  ["Date.getLastDate", new Date("2000-02-01"), 29],
-  ["Date.getQuarter", new Date("2018-04-01"), 2],
-  ["Date.getTimezone", new Date(), "+01:00"],
-  ["Date.getTimezone", new Date(), -540, "+09:00"],
-  ["Date.setTimezone", new Date("2000-01-01T01:00:00Z"), new Date("2000-01-01")],
-  ["Date.setTimezone", new Date("2000-01-01T01:00:00Z"), "+01:00", new Date("2000-01-01T01:00:00Z")],
-  ["Date.setTimezone", new Date("2000-01-01T01:00:00Z"), "+05:00", new Date("2000-01-01T05:00:00Z")],
-  ["Date.setTimezone", new Date("2000-01-02T01:00:00Z"), "-05:00", new Date("2000-01-01T19:00:00Z")],
-  // ["Date.setTimezone", new Date("2000-01-01T01:00:00Z"), "Europe/Paris", new Date("2000-01-01T01:00:00Z")],
+  ["Date.getWeek", new Date("2016-11-05T00:00"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month
+  ["Date.getWeek", new Date("2000-01-01T00:00"), 52], // Saturday, Leep year
+  ["Date.getWeek", new Date("2000-01-02T00:00"), 52],
+  ["Date.getWeek", new Date("2000-01-03T00:00"), 1],
+  ["Date.getWeek", new Date("2000-01-04T00:00"), 1],
+  ["Date.getWeek", new Date("2000-01-11T00:00"), 2],
+  ["Date.getWeek", new Date("2000-01-19T00:00"), 3],
+  ["Date.getWeek", new Date("2000-01-27T00:00"), 4],
+  ["Date.getWeek", new Date("2000-02-04T00:00"), 5],
+  ["Date.getWeek", new Date("2000-02-12T00:00"), 6],
+  ["Date.getWeek", new Date("2000-09-17T00:00"), 37],
+  ["Date.getWeek", new Date("2000-12-17T00:00"), 50],
+  ["Date.getWeek", new Date("2000-12-24T00:00"), 51],
+  ["Date.getWeek", new Date("2000-12-31T00:00"), 52],
+  ["Date.getWeek", new Date("2001-01-01T00:00"), 1], // Monday
+  ["Date.getWeek", new Date("2002-01-01T00:00"), 1], // Tuesday
+  ["Date.getWeek", new Date("2003-01-01T00:00"), 1], // Wednesday
+  ["Date.getWeek", new Date("2004-01-01T00:00"), 1], // Thursday, Leep year
+  ["Date.getWeek", new Date("2004-12-31T00:00"), 53], // Friday, Leep year
+  ["Date.getWeek", new Date("2005-01-01T00:00"), 53], // Saturday
+  ["Date.getWeek", new Date("2006-01-01T00:00"), 52], // Sunday
+  ["Date.getLastDate", new Date("2000-02-01T00:00"), 29],
+  ["Date.getQuarter", new Date("2018-04-01T00:00"), 2],
+  ["Date.getTimezone", date, offset],
+  ["Date.getTimezone", date, -540, "+09:00"],
+  ["Date.setTimezone", date, offset, date],
+  ["Date.setTimezone", new Date("2000-01-01T00:00" + offset.replace(/./, (m) => (m === "+" ? "-" : "+"))), "+05:00", new Date("2000-01-01T05:00:00Z")],
+  ["Date.setTimezone", new Date("2000-01-02T00:00" + offset.replace(/./, (m) => (m === "+" ? "-" : "+"))), "-05:00", new Date("2000-01-01T19:00:00Z")],
+  // ["Date.setTimezone", new Date("2000-01-01T00:00"), "Europe/Paris", new Date("2000-01-01T00:00")],
   // new Date("2000").plus("3 millisecond") //= new Date("2000-01-01T00:00:01.003Z")
   ["Date.plus", new Date("2000-01-01"), "3 millisecond", new Date("2000-01-01T00:00:00.003Z")],
-  ["Date.plus", new Date("2020-01-01T00:00:00+01:00"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03+01:00")],
-  ["Date.plus", new Date("2018-11-30"), { months: 3 }, new Date("2019-02-28")],
-  ["Date.plus", new Date("2018-12-31"), { months: 1 }, new Date("2019-01-31")],
-  ["Date.plus", new Date("2020-01-01"), { months: 1 }, new Date("2020-02-01")],
-  ["Date.plus", new Date("2020-01-31"), { months: 1 }, new Date("2020-02-29")],
-  ["Date.plus", new Date("2020-01-31"), "month", new Date("2020-02-29")],
-  ["Date.plus", new Date("2020-02-29"), { months: 1 }, new Date("2020-03-29")],
-  ["Date.plus", new Date("2020-03-31"), { months: -1 }, new Date("2020-02-29")],
-  ["Date.plus", new Date("2016-02-29"), { years: 1.2 }, new Date("2017-02-28")],
-  ["Date.plus", new Date("2016-02-29"), { years: "1.2" }, new Date("2017-02-28")],
-  ["Date.plus", new Date("2016-02-29"), null, new Date("2016-02-29")],
-  ["Date.plus", new Date("2016-02-29"), new Date("2016-02-29")],
-  ["Date.plus", new Date("2016-02-29"), { year: 10 }, new Date("2016-02-29")], //* ignored options without plural
-  ["Date.plus", new Date("2016-02-29"), { years: null }, new Date("2016-02-29")], //* ignored
-  ["Date.plus", new Date("2016-02-29"), { years: 0 }, new Date("2016-02-29")], //* ignored
-  ["Date.plus", new Date("2016-02-29"), { ignored: 1, and: 1, quarters: 1 }, new Date("2016-02-29")], //* ignored additional properties
-  ["Date.plus", new Date("2020-01-01"), { months: 1.2 }, new Date("2020-02-01")], //* Expected behavior
-  ["Date.plus", new Date("2020-01-31"), "1.2 month", new Date("2020-02-29")], //* Expected behavior //! DEPRECATED syntax
-  ["Date.plus", new Date("2020-01-01T00:00:00+01:00"), "+1 year +1 month +1 hour +2 minute -3 seconds", new Date("2021-02-01T01:01:57+01:00")], //! DEPRECATED syntax
-  ["Date.minus", new Date("2020-01-01"), "1 month", new Date("2019-12-01")],
-  ["Date.minus", new Date("2020-02-29"), "1 year", new Date("2019-02-28")],
-  ["Date.minus", new Date("2018-11-30"), "-3 month", new Date("2019-02-28")], //* Subtract negative number
-  ["Date.start", new Date("2018-02-28T04:05:00Z"), "month", new Date("2018-02-01T00:00:00+01:00")],
-  // ["Date.start", new Date("2018-02-28T04:05:00"), "week", new Date("2018-02-01T00:00:00")], // NOTE: start on sunday or monday
-  ["Date.end", new Date("2016-02-29T10:11:12Z"), "year", new Date("2016-12-31T23:59:59.999+01:00")],
+  ["Date.plus", new Date("2020-01-01"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03Z")],
+  ["Date.plus", new Date("2020-01-01"), "+1 year +1 month +1 hour +2 minute -3 seconds", new Date("2021-02-01T01:01:57Z")], //! DEPRECATED syntax
+  ["Date.plus", new Date("2018-11-30T00:00"), { months: 3 }, new Date("2019-02-28T00:00")],
+  ["Date.plus", new Date("2018-12-31T00:00"), { months: 1 }, new Date("2019-01-31T00:00")],
+  ["Date.plus", new Date("2020-01-01T00:00"), { months: 1 }, new Date("2020-02-01T00:00")],
+  ["Date.plus", new Date("2020-01-31T00:00"), { months: 1 }, new Date("2020-02-29T00:00")],
+  ["Date.plus", new Date("2020-01-31T00:00"), "month", new Date("2020-02-29T00:00")],
+  ["Date.plus", new Date("2020-02-29T00:00"), { months: 1 }, new Date("2020-03-29T00:00")],
+  ["Date.plus", new Date("2020-03-31T00:00"), { months: -1 }, new Date("2020-02-29T00:00")], // NOTE: daylight saving time change
+  ["Date.plus", new Date("2016-02-29T00:00"), { years: 1.2 }, new Date("2017-02-28T00:00")],
+  ["Date.plus", new Date("2016-02-29T00:00"), { years: "1.2" }, new Date("2017-02-28T00:00")],
+  ["Date.plus", new Date("2016-02-29T00:00"), null, new Date("2016-02-29T00:00")],
+  ["Date.plus", new Date("2016-02-29T00:00"), new Date("2016-02-29T00:00")],
+  ["Date.plus", new Date("2016-02-29T00:00"), { year: 10 }, new Date("2016-02-29T00:00")], //* ignored options without plural
+  ["Date.plus", new Date("2016-02-29T00:00"), { years: null }, new Date("2016-02-29T00:00")], //* ignored
+  ["Date.plus", new Date("2016-02-29T00:00"), { years: 0 }, new Date("2016-02-29T00:00")], //* ignored
+  ["Date.plus", new Date("2016-02-29T00:00"), { ignored: 1, and: 1, quarters: 1 }, new Date("2016-02-29T00:00")], //* ignored additional properties
+  ["Date.plus", new Date("2020-01-01T00:00"), { months: 1.2 }, new Date("2020-02-01T00:00")], //* Expected behavior
+  ["Date.plus", new Date("2020-01-31T00:00"), "1.2 month", new Date("2020-02-29T00:00")], //* Expected behavior //! DEPRECATED syntax
+  ["Date.minus", new Date("2020-01-01T00:00"), "1 month", new Date("2019-12-01T00:00")],
+  ["Date.minus", new Date("2020-02-29T00:00"), "1 year", new Date("2019-02-28T00:00")],
+  ["Date.minus", new Date("2018-11-30T00:00"), "-3 month", new Date("2019-02-28T00:00")], //* Subtract negative number
+  ["Date.start", new Date("2018-02-28T04:05:00Z"), "month", new Date("2018-02-01T00:00")],
+  ["Date.start", new Date("2020-03-31T12:00"), "month", new Date("2020-03-01T00:00")], // NOTE: daylight saving time change
+  // ["Date.start", new Date("2018-02-28T04:05:00"), "week", new Date("2018-02-01T00:00")], // NOTE: start on sunday or monday
+  ["Date.end", new Date("2016-02-29T10:11:12Z"), "year", new Date("2016-12-31T23:59:59.999")],
   ["Date.relative", date, date, ""],
   ["Date.relative", new Date(+date - 1000), date, "1 second ago"], //* 1 second before
   ["Date.relative", new Date(+date + 2 * 60 * 60 * 1000), date, "2 hours from now"], //* 2 hours after

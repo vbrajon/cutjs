@@ -56,75 +56,75 @@ export const packages = [
       return fns
     },
   },
-  {
-    name: "vanilla",
-    versions: ["es2022"],
-    import: async (version) => {
-      const { Temporal } = await import("@js-temporal/polyfill")
-      return {
-        "Object.map": (obj, fn) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, fn(v, k, obj)])),
-        "Object.filter": (obj, fn) => Object.fromEntries(Object.entries(obj).filter(([k, v]) => fn(v, k, obj))),
-        "Object.find": (obj, fn) => obj[Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks))],
-        "Object.findIndex": (obj, fn) => Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks)),
-        "Date.getWeek": (date) => Temporal.PlainDate.from({ year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }).weekOfYear,
-      }
-    },
-  },
-  {
-    name: "lodash-es",
-    // versions: (await versionList("lodash-es"))
-    //   .filter((v) => v.startsWith("4"))
-    //   .reverse()
-    //   .slice(-1)
-    //   .reverse(),
-    versions: ["4.17.21"],
-    import: async (version) => {
-      const module = await import("lodash-es")
-      const fns = {
-        // "Generic.is": (...args) => module[`is${args[1]?.name.replace(/./, (c) => c.toUpperCase())}`](...args),
-        // "Generic.access": module.get,
-        "Generic.equal": (...args) => (args[0] instanceof Function ? args[0].toString() === args[1].toString() : module.isEqual(...args)),
-        // "Generic.transform": module.transform,
-        "Object.keys": module.keys,
-        "Object.values": module.values,
-        "Object.entries": module.toPairs,
-        "Object.fromEntries": module.fromPairs,
-        "Object.map": (...args) => (args[0].constructor === Object ? module.mapValues(...args) : module.map(...args)),
-        "Object.filter": (...args) => (args[0].constructor === Object ? module.pickBy(...args) : module.filter(...args)),
-        "Object.find": module.find,
-        "Object.findIndex": module.findKey,
-        "Object.reduce": module.reduce,
-        "Array.map": module.map,
-        "Array.filter": module.filter,
-        "Array.find": module.find,
-        "Array.findIndex": module.findIndex,
-        "Array.reduce": module.reduce,
-        "Array.group": module.groupBy,
-        "Array.sort": module.sortBy,
-        "Array.reverse": module.reverse,
-        "Array.unique": module.uniq,
-        "Array.sum": module.sum,
-        "Array.min": module.min,
-        "Array.max": module.max,
-        "Array.mean": module.mean,
-        "Array.median": module.median,
-        // "Function.decorate": module.flow,
-        // "Function.promisify": module.bind,
-        // "Function.partial": module.partial,
-        // "Function.memoize": module.memoize,
-        "String.lower": module.toLower,
-        "String.upper": module.toUpper,
-        "String.capitalize": module.capitalize,
-        "String.words": module.words,
-        "RegExp.escape": (...args) => RegExp(module.escapeRegExp(...args).slice(1, -1)),
-      }
-      for (const name in fns) {
-        const [cname, fname] = name.split(".")
-        fns[fname] = fns[name]
-      }
-      return fns
-    },
-  },
+  // {
+  //   name: "vanilla",
+  //   versions: ["es2022"],
+  //   import: async (version) => {
+  //     const { Temporal } = await import("@js-temporal/polyfill")
+  //     return {
+  //       "Object.map": (obj, fn) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, fn(v, k, obj)])),
+  //       "Object.filter": (obj, fn) => Object.fromEntries(Object.entries(obj).filter(([k, v]) => fn(v, k, obj))),
+  //       "Object.find": (obj, fn) => obj[Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks))],
+  //       "Object.findIndex": (obj, fn) => Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks)),
+  //       "Date.getWeek": (date) => Temporal.PlainDate.from({ year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }).weekOfYear,
+  //     }
+  //   },
+  // },
+  // {
+  //   name: "lodash-es",
+  //   // versions: (await versionList("lodash-es"))
+  //   //   .filter((v) => v.startsWith("4"))
+  //   //   .reverse()
+  //   //   .slice(-1)
+  //   //   .reverse(),
+  //   versions: ["4.17.21"],
+  //   import: async (version) => {
+  //     const module = await import("lodash-es")
+  //     const fns = {
+  //       // "Generic.is": (...args) => module[`is${args[1]?.name.replace(/./, (c) => c.toUpperCase())}`](...args),
+  //       // "Generic.access": module.get,
+  //       "Generic.equal": (...args) => (args[0] instanceof Function ? args[0].toString() === args[1].toString() : module.isEqual(...args)),
+  //       // "Generic.transform": module.transform,
+  //       "Object.keys": module.keys,
+  //       "Object.values": module.values,
+  //       "Object.entries": module.toPairs,
+  //       "Object.fromEntries": module.fromPairs,
+  //       "Object.map": (...args) => (args[0].constructor === Object ? module.mapValues(...args) : module.map(...args)),
+  //       "Object.filter": (...args) => (args[0].constructor === Object ? module.pickBy(...args) : module.filter(...args)),
+  //       "Object.find": module.find,
+  //       "Object.findIndex": module.findKey,
+  //       "Object.reduce": module.reduce,
+  //       "Array.map": module.map,
+  //       "Array.filter": module.filter,
+  //       "Array.find": module.find,
+  //       "Array.findIndex": module.findIndex,
+  //       "Array.reduce": module.reduce,
+  //       "Array.group": module.groupBy,
+  //       "Array.sort": module.sortBy,
+  //       "Array.reverse": module.reverse,
+  //       "Array.unique": module.uniq,
+  //       "Array.sum": module.sum,
+  //       "Array.min": module.min,
+  //       "Array.max": module.max,
+  //       "Array.mean": module.mean,
+  //       "Array.median": module.median,
+  //       // "Function.decorate": module.flow,
+  //       // "Function.promisify": module.bind,
+  //       // "Function.partial": module.partial,
+  //       // "Function.memoize": module.memoize,
+  //       "String.lower": module.toLower,
+  //       "String.upper": module.toUpper,
+  //       "String.capitalize": module.capitalize,
+  //       "String.words": module.words,
+  //       "RegExp.escape": (...args) => RegExp(module.escapeRegExp(...args).slice(1, -1)),
+  //     }
+  //     for (const name in fns) {
+  //       const [cname, fname] = name.split(".")
+  //       fns[fname] = fns[name]
+  //     }
+  //     return fns
+  //   },
+  // },
 ]
 export default [
   ...testsSync,
