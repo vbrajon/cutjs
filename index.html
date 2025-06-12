@@ -122,6 +122,7 @@
   function stringify(v) {
     if (v === undefined) return "undefined"
     if (v === null) return "null"
+    if (Object.is(v, -0)) return "-0"
     if (typeof v === "string") return JSON.stringify(v)
     if (typeof v === "number" || typeof v === "boolean") return String(v)
     if (v instanceof Date) return +new Date(v.format()) ? `new Date("${v.format()}")` : `new Date(${+v})`

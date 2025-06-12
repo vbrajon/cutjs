@@ -67,6 +67,7 @@ export default [
   ["Generic.access", { "a.b": 1 }, { "a.b": 1 }], // != lodash
   ["Generic.access", { "a.b": 1 }, null, { "a.b": 1 }], // != lodash
   ["Generic.access", { "a.b": 1 }, undefined, { "a.b": 1 }], // != lodash
+  ["Generic.access", { "a.b": 1 }, [], { "a.b": 1 }],
   ["Generic.access", 1, 1, undefined],
   ["Generic.access", undefined],
   ["Generic.transform", 1, (v) => v * 2, 2], //* works also with primitives
@@ -101,6 +102,8 @@ export default [
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], "a", [1, 3]], // prettier-ignore
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], ["a", "b"], [[1, 2], [3, 4]]], // prettier-ignore
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], { a: "b" }, [{ a: 2 }, { a: 4 }]], // prettier-ignore
+  ["Array.map", [{ a: { b: 2 } }, { a: { b: 4 } }], "a.b", [2, 4]], // prettier-ignore
+  ["Array.map", [{ a: { b: 2 } }, { "a.b": 4 }], "a.b", [2, 4]], // prettier-ignore
   ["Array.filter", [null, "a", undefined, /a/], ["a", /a/]],
   ["Array.filter", users, { name: /Ja/ }, [{ name: "Jane Doe", age: 22 }, { name: "Janette Doe", age: 22 }]], // prettier-ignore
   ["Array.filter", users, "name", users],
@@ -261,17 +264,26 @@ export default [
   ["Number.format", 0.1 * 3 * 1000, 0, 300],
   ["Number.format", 0.1 * 3 * 1000, "", 300],
   ["Number.format", 0.1 * 3 * 1000, 1, "300"],
+  ["Number.format", 0.1 * 3 * 1000, "xx-invalid", "300"],
   ["Number.format", -0.000123456789, 1, "-100µ"],
   ["Number.format", 123456789000, 2, "120G"],
   ["Number.format", 1, 10, "1"],
   ["Number.format", 1010.0101, "en", "1,010.01"],
+  ["Number.format", 1010.0101, "en-US", "1,010.01"],
   ["Number.format", 1010.0101, "fr", "1 010,01"],
   ["Number.format", 1010.0101, "de", "1.010,01"],
-  ["Number.format", 1010.0101, "'", ".", "1'010.01"],
   ["Number.format", 1010, "USD", "$1,010"],
   ["Number.format", 1010, "$", "$1,010"],
   ["Number.format", 1010, "en", { style: "currency", currency: "USD" }, "$1,010.00"],
-  // ["Number.format", 0.1 * 3 * 1000, "x-invalid", "300"],
+  ["Number.format", 1010.0101, "'", "1'010"],
+  ["Number.format", 1010.0101, "',", "1'010"],
+  ["Number.format", 1010.0101, "',00", "1'010,01"],
+  ["Number.format", -0, "+0,000.00", "-0,000.00"],
+  ["Number.format", +0, "+0,000.00", "+0,000.00"],
+  ["Number.format", 1, "-000,000,000.00", "+000,000,001.00"],
+  ["Number.format", -1, "000000.0000##", "-000001.0000"],
+  ["Number.format", 1, "#,#00.00#", "01.00"],
+  ["Number.format", -Infinity, "0.00", "-∞"],
   ["Number.duration", -36666666, "-10 hours"],
   ["Number.duration", 1, "1 millisecond"],
   ["Number.duration", 0, ""],

@@ -17,11 +17,11 @@ function equal(a, b) {
   if (Object.keys(a).length !== Object.keys(b).length) return false
   return Object.keys(a).every((k) => equal(a[k], b[k]))
 }
-const dotpath = function_memoize((str) => str.split(/(?:\.|\[["']?([^\]"']*)["']?\])/).filter((x) => x))
+access.dotpath = function_memoize((str) => str.split(/(?:\.|\[["']?([^\]"']*)["']?\])/).filter((x) => x))
 function access(obj, path) {
   if (obj == null || path == null) return obj
   if (Object.prototype.hasOwnProperty.call(obj, path)) return obj[path]
-  if (typeof path === "string") return access(obj, dotpath(path))
+  if (typeof path === "string") return access(obj, access.dotpath(path))
   if (path instanceof Function) return path(obj)
   if (path instanceof Array) return path.reduce((a, p) => (a && a[p] != null ? a[p] : undefined), obj)
   if (path instanceof Object) return Object.entries(path).reduce((a, [k, v]) => ((a[k] = access(obj, v)), a), {})
@@ -54,6 +54,7 @@ function object_filter(obj, fn) {
 function object_find(obj, fn) {
   return obj[Object.keys(obj).find((k, i) => fn(obj[k], k, i, obj))]
 }
+// NOTE: This will return the "key" of the object and not an "index" number
 function object_findIndex(obj, fn) {
   return Object.keys(obj).find((k, i) => fn(obj[k], k, i, obj))
 }
@@ -220,9 +221,19 @@ CURRENCY.forEach((k) => {
 function number_format(num, v0, v1) {
   if (!v0) return +(+num.toPrecision(15)).toFixed(15)
   if (typeof v0 === "number") return num.toExponential(v0 - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
-  if (typeof v1 === "string") return num.toLocaleString("en").replace(/,/g, v0).replace(/\./, v1)
   if (CURRENCY[v0]) return Intl.NumberFormat("en", { style: "currency", currency: CURRENCY[v0], minimumFractionDigits: 0 }).format(num)
-  if (typeof v0 === "string") return Intl.NumberFormat(v0, v1).format(num)
+  if (/^[a-zA-Z]{2}/.test(v0)) return Intl.NumberFormat(v0, v1).format(num)
+  if (v0.length === 1) v0 = v0 + "."
+  const [thousandSep, decimalSep] = [""].concat(v0.match(/[^0#]/g)).slice(-2)
+  const [thousandPart, decimalPart] = v0.split(decimalSep)
+  return new Intl.NumberFormat("en", {
+    minimumIntegerDigits: (thousandPart.match(/0/g) || []).length || 1,
+    minimumFractionDigits: (decimalPart.match(/0/g) || []).length,
+    maximumFractionDigits: (decimalPart.match(/[0#]/g) || []).length,
+    signDisplay: /[+-]/.test(v0) ? "always" : undefined,
+  })
+    .format(num)
+    .replace(/[,.]/g, (m) => (m === "," ? thousandSep : decimalSep))
 }
 // Date
 const DATE = [
