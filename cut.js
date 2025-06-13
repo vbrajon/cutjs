@@ -285,7 +285,6 @@ function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
     if (parts.includes("hour")) options.hour = "2-digit"
     if (parts.includes("minute")) options.minute = "2-digit"
     if (parts.includes("second")) options.second = "2-digit"
-    if (!options.year && !options.month && !options.day) return date_format(date, (options.hour && "hh:mm:ss") || (options.minute && "mm:ss") || "ss")
     return date.toLocaleString(lang, options)
   }
   return DATE.reduce((str, [k, v, letter, jsfn, zeros = 2]) => {
