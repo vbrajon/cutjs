@@ -219,6 +219,7 @@ CURRENCY.forEach((k) => {
   CURRENCY[symbol] = k
 })
 function number_format(num, v0, v1) {
+  if (typeof num === "bigint") num = Number(num)
   if (!v0) return +(+num.toPrecision(15)).toFixed(15)
   if (typeof v0 === "number") return num.toExponential(v0 - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
   if (CURRENCY[v0]) return Intl.NumberFormat("en", { style: "currency", currency: CURRENCY[v0], minimumFractionDigits: 0 }).format(num)
