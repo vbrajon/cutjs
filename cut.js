@@ -251,6 +251,16 @@ const DATE = [
   ["timezone", null, "Z", "Timezone"],
 ]
 DATE.forEach(([k, v]) => (DATE[k.toUpperCase()] = v))
+function date_parse(from, str) {
+  if (/now/.test(str) && !/from\s+now/.test(str)) return from
+  if (/today/.test(str)) from = date_modify(from, "day", "<")
+  const numberWords = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 } // prettier-ignore
+  str = str.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi, (match, tens, ones) => numberWords[match.toLowerCase()] || numberWords[tens.toLowerCase()] + (ones ? numberWords[ones.toLowerCase()] : 0)) // prettier-ignore
+  str = str.replace("today", "").replace("yesterday", "last day").replace("tomorrow", "next day")
+  const [_, hours = 0, minutes = 0, seconds = 0, ampm] = str.match(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i) || []
+  if ((hours && minutes) || ampm) from = date_modify(date_modify(from, "day", "<"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds }, "+")
+  return date_modify(from, str, /(last|ago)/.test(str) ? "-" : "+")
+}
 function date_relative(from, to = new Date()) {
   return number_duration(+from - +to).replace(/^-?(.+)/, (m, d) => d + (m[0] === "-" ? " ago" : " from now"))
 }
@@ -301,7 +311,7 @@ function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
     })
   }, format)
 }
-function date_modify(date, options, sign, format) {
+function date_modify(date, options, sign) {
   if (!options || !sign) return date
   if (typeof options === "string") {
     options = { str: options }
@@ -334,7 +344,6 @@ function date_modify(date, options, sign, format) {
   units.forEach((unit) => options[unit[0] + "s"] && fn(unit, options[unit[0] + "s"]))
   if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[k + "s"]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[k + "s"])) d.setDate(0) // prettier-ignore
   if (["-", "+"].includes(sign) && date.getTimezoneOffset() !== d.getTimezoneOffset()) d.setTime(+d + (date.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000)
-  if (format) return date_format(d, format)
   return d
 }
 function date_plus(date, options) {
@@ -592,6 +601,7 @@ function cut(...args) {
     cut(Date, "getLastDate", date_getLastDate)
     cut(Date, "getTimezone", date_getTimezone)
     cut(Date, "setTimezone", date_setTimezone)
+    cut(Date, "parse", date_parse)
     cut(Date, "format", date_format)
     cut(Date, "modify", date_modify)
     cut(Date, "plus", date_plus)
@@ -606,5 +616,5 @@ function cut(...args) {
 }
 cut("mode", import.meta.url.split("?")[1] || "default")
 export default cut
-const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, modify, plus, minus, start, end, escape, replace } = cut // prettier-ignore
-export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, modify, plus, minus, start, end, escape, replace } // prettier-ignore
+const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } = cut // prettier-ignore
+export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } // prettier-ignore

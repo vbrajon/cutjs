@@ -293,6 +293,32 @@ export default [
   ["Number.duration", -36666666, "-10 hours"],
   ["Number.duration", 1, "1 millisecond"],
   ["Number.duration", 0, ""],
+
+  // https://sugarjs.com/dates/
+  // https://github.com/tj/go-naturaldate/blob/master/naturaldate_test.go
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "now", new Date("2000-01-01T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "today", new Date("2000-01-01T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday", new Date("1999-12-31T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "tomorrow", new Date("2000-01-02T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "1 hour ago", new Date("1999-12-31T23:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "1 hour from now", new Date("2000-01-01T01:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "in one hour, two minutes and thirty-four seconds", new Date("2000-01-01T01:02:34")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "in two hours", new Date("2000-01-01T02:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "next hour", new Date("2000-01-01T01:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "last hour", new Date("1999-12-31T23:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "today 3pm", new Date("2000-01-01T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday at 3pm", new Date("1999-12-31T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "at 3pm", new Date("2000-01-01T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "4:45", new Date("2000-01-01T04:45:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "6:30:15pm in three days", new Date("2000-01-04T18:30:15")],
+
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "the 15th", new Date("2000-01-15T00:00:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "december 2nd", new Date("2000-12-02T00:00:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "the 4th of July", new Date("2000-07-04T00:00:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "next Tuesday", new Date("2000-01-04T00:00:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "end of February", new Date("2000-02-29T00:00:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "should throw an error at random string §@", new Date("Invalid")],
+
   ["Date.format", date, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, undefined, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, "", ""], // NOTE: this should return the default format
