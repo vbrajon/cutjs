@@ -224,6 +224,7 @@ function number_format(num, v0, v1) {
   if (typeof v0 === "number") return num.toExponential(v0 - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
   if (CURRENCY[v0]) return Intl.NumberFormat("en", { style: "currency", currency: CURRENCY[v0], minimumFractionDigits: 0 }).format(num)
   if (/^[a-zA-Z]{2}/.test(v0)) return Intl.NumberFormat(v0, v1).format(num)
+  if (v0.length === 2) v0 = v0 + "#".repeat(15)
   if (v0.length === 1) v0 = v0 + "."
   const [thousandSep, decimalSep] = [""].concat(v0.match(/[^0#]/g)).slice(-2)
   const [thousandPart, decimalPart] = v0.split(decimalSep)
@@ -300,12 +301,14 @@ function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
     })
   }, format)
 }
-function date_modify(date, options, sign) {
+function date_modify(date, options, sign, format) {
   if (!options || !sign) return date
   if (typeof options === "string") {
     options = { str: options }
-    options.str.replace(/([+-.\d]*)\s*(millisecond|second|minute|hour|day|month|year)s?/gi, (m, n, u) => (options[u + "s"] = +n || 1 - +(n === "0")))
+    options.str.replace(/([+-.\d]*)\s*(millisecond|second|minute|hour|day|week|month|quarter|year)/gi, (m, n, u) => (options[u + "s"] = +n || 1 - +(n === "0")))
   }
+  if (options.weeks) options.days = options.days || 0 + options.weeks * 7
+  if (options.quarters) options.months = options.months || 0 + options.quarters * 3
   options = Object.fromEntries(
     Object.entries(options)
       .filter(([k, v]) => ["milliseconds", "seconds", "minutes", "hours", "days", "months", "years"].includes(k))
@@ -330,6 +333,8 @@ function date_modify(date, options, sign) {
   }[sign]
   units.forEach((unit) => options[unit[0] + "s"] && fn(unit, options[unit[0] + "s"]))
   if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[k + "s"]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[k + "s"])) d.setDate(0) // prettier-ignore
+  if (["-", "+"].includes(sign) && date.getTimezoneOffset() !== d.getTimezoneOffset()) d.setTime(+d + (date.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000)
+  if (format) return date_format(d, format)
   return d
 }
 function date_plus(date, options) {

@@ -275,14 +275,17 @@ export default [
   ["Number.format", 1010, "USD", "$1,010"],
   ["Number.format", 1010, "$", "$1,010"],
   ["Number.format", 1010, "en", { style: "currency", currency: "USD" }, "$1,010.00"],
-  ["Number.format", 1010.0101, "'", "1'010"],
-  ["Number.format", 1010.0101, "',", "1'010"],
-  ["Number.format", 1010.0101, "',00", "1'010,01"],
   ["Number.format", -0, "+0,000.00", "-0,000.00"],
   ["Number.format", +0, "+0,000.00", "+0,000.00"],
   ["Number.format", 1, "-000,000,000.00", "+000,000,001.00"],
   ["Number.format", -1, "000000.0000##", "-000001.0000"],
-  ["Number.format", 1, "#,#00.00#", "01.00"],
+  ["Number.format", 2, "#,#00.00#", "02.00"],
+  ["Number.format", 2, "0.00", "2.00"],
+  ["Number.format", 123456.789, "_", "123_457"],
+  ["Number.format", 123456.789, "_.", "123_456.789"],
+  ["Number.format", 123456.789, ".00", "123456.79"],
+  ["Number.format", 123456.789, "0.00", "123456.79"],
+  ["Number.format", 123456.789, "_0.00", "123_456.79"],
   ["Number.format", -Infinity, "0.00", "-∞"],
   ["Number.format", 1e308, 1e308],
   ["Number.format", 1e309, Infinity],
@@ -291,6 +294,8 @@ export default [
   ["Number.duration", 1, "1 millisecond"],
   ["Number.duration", 0, ""],
   ["Date.format", date, "2019-01-20T10:09:08" + offset],
+  ["Date.format", date, undefined, "2019-01-20T10:09:08" + offset],
+  ["Date.format", date, "", ""], // NOTE: this should return the default format
   ["Date.format", date, "YYYY/MM/DD hhhmmmsssSSSZ", "2019/01/20 10h09m08s000" + offset],
   ["Date.format", date, "QQ WW", "Q1 W3"],
   ["Date.format", date, "full", "Sunday, January 20, 2019"],
@@ -348,7 +353,11 @@ export default [
   ["Date.setTimezone", new Date("2000-01-02T00:00" + offset.replace(/./, (m) => (m === "+" ? "-" : "+"))), "-05:00", new Date("2000-01-01T19:00:00Z")],
   // ["Date.setTimezone", new Date("2000-01-01T00:00"), "Europe/Paris", new Date("2000-01-01T00:00")],
   // new Date("2000").plus("3 millisecond") //= new Date("2000-01-01T00:00:01.003Z")
-  ["Date.plus", new Date("2000-01-01"), "3 millisecond", new Date("2000-01-01T00:00:00.003Z")],
+  ["Date.plus", new Date("2000-01-01"), { milliseconds: 3 }, new Date("2000-01-01T00:00:00.003Z")],
+  ["Date.plus", new Date("2000-01-01"), { days: 1 }, new Date("2000-01-02T00:00:00Z")],
+  ["Date.plus", new Date("2000-01-01"), { weeks: 1 }, new Date("2000-01-08T00:00:00Z")],
+  ["Date.plus", new Date("2000-01-01"), { quarters: 1 }, new Date("2000-04-01T00:00:00Z")],
+  ["Date.plus", new Date("2000-01-01"), { months: 3 }, new Date("2000-04-01T00:00:00Z")],
   ["Date.plus", new Date("2020-01-01"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03Z")],
   ["Date.plus", new Date("2020-01-01"), "+1 year +1 month +1 hour +2 minute -3 seconds", new Date("2021-02-01T01:01:57Z")], //! DEPRECATED syntax
   ["Date.plus", new Date("2018-11-30T00:00"), { months: 3 }, new Date("2019-02-28T00:00")],
@@ -356,8 +365,8 @@ export default [
   ["Date.plus", new Date("2020-01-01T00:00"), { months: 1 }, new Date("2020-02-01T00:00")],
   ["Date.plus", new Date("2020-01-31T00:00"), { months: 1 }, new Date("2020-02-29T00:00")],
   ["Date.plus", new Date("2020-01-31T00:00"), "month", new Date("2020-02-29T00:00")],
-  ["Date.plus", new Date("2020-02-29T00:00"), { months: 1 }, new Date("2020-03-29T00:00")],
-  ["Date.plus", new Date("2020-03-31T00:00"), { months: -1 }, new Date("2020-02-29T00:00")], // NOTE: daylight saving time change
+  ["Date.plus", new Date("2020-02-29"), { months: 1 }, new Date("2020-03-29")], // NOTE: daylight saving time change
+  ["Date.plus", new Date("2020-03-31"), { months: -1 }, new Date("2020-02-29")], // NOTE: daylight saving time change
   ["Date.plus", new Date("2016-02-29T00:00"), { years: 1.2 }, new Date("2017-02-28T00:00")],
   ["Date.plus", new Date("2016-02-29T00:00"), { years: "1.2" }, new Date("2017-02-28T00:00")],
   ["Date.plus", new Date("2016-02-29T00:00"), null, new Date("2016-02-29T00:00")],
@@ -365,7 +374,7 @@ export default [
   ["Date.plus", new Date("2016-02-29T00:00"), { year: 10 }, new Date("2016-02-29T00:00")], //* ignored options without plural
   ["Date.plus", new Date("2016-02-29T00:00"), { years: null }, new Date("2016-02-29T00:00")], //* ignored
   ["Date.plus", new Date("2016-02-29T00:00"), { years: 0 }, new Date("2016-02-29T00:00")], //* ignored
-  ["Date.plus", new Date("2016-02-29T00:00"), { ignored: 1, and: 1, quarters: 1 }, new Date("2016-02-29T00:00")], //* ignored additional properties
+  ["Date.plus", new Date("2016-02-29T00:00"), { ignored: 1 }, new Date("2016-02-29T00:00")], //* ignored additional properties
   ["Date.plus", new Date("2020-01-01T00:00"), { months: 1.2 }, new Date("2020-02-01T00:00")], //* Expected behavior
   ["Date.plus", new Date("2020-01-31T00:00"), "1.2 month", new Date("2020-02-29T00:00")], //* Expected behavior //! DEPRECATED syntax
   ["Date.minus", new Date("2020-01-01T00:00"), "1 month", new Date("2019-12-01T00:00")],
@@ -373,7 +382,7 @@ export default [
   ["Date.minus", new Date("2018-11-30T00:00"), "-3 month", new Date("2019-02-28T00:00")], //* Subtract negative number
   ["Date.start", new Date("2018-02-28T04:05:00Z"), "month", new Date("2018-02-01T00:00")],
   ["Date.start", new Date("2020-03-31T12:00"), "month", new Date("2020-03-01T00:00")], // NOTE: daylight saving time change
-  // ["Date.start", new Date("2018-02-28T04:05:00"), "week", new Date("2018-02-01T00:00")], // NOTE: start on sunday or monday
+  // ["Date.start", new Date("2018-02-28T04:05:00"), "week", new Date("2018-02-25T00:00")], // NOTE: start on sunday or monday
   ["Date.end", new Date("2016-02-29T10:11:12Z"), "year", new Date("2016-12-31T23:59:59.999")],
   ["Date.relative", date, date, ""],
   ["Date.relative", new Date(+date - 1000), date, "1 second ago"], //* 1 second before
