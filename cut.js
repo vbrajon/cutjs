@@ -237,7 +237,7 @@ function number_format(num, v0, v1) {
     .format(num)
     .replace(/[,.]/g, (m) => (m === "," ? thousandSep : decimalSep))
 }
-// Date
+// Date: unit, ms, letter, fn, zeros
 const DATE = [
   ["millisecond", 1, "S", "Milliseconds", 3],
   ["second", 1000, "s", "Seconds"],
@@ -246,19 +246,24 @@ const DATE = [
   ["day", 1000 * 60 * 60 * 24, "D", "Date"],
   ["week", 1000 * 60 * 60 * 24 * 7, "W", "Week"],
   ["month", 1000 * 60 * 60 * 24 * 30, "M", "Month"],
-  ["quarter", 1000 * 60 * 60 * 24 * 30 * 3, "Q", "Quarter", 1],
+  ["quarter", 1000 * 60 * 60 * 24 * 30 * 3, "Q", "Quarter"],
   ["year", 1000 * 60 * 60 * 24 * 365, "Y", "FullYear", 4],
   ["timezone", null, "Z", "Timezone"],
 ]
 DATE.forEach(([k, v]) => (DATE[k.toUpperCase()] = v))
+const DAY = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+const MONTH = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+const NUMBER = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 } // prettier-ignore
+const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi // prettier-ignore
 function date_parse(from, str) {
-  if (/now/.test(str) && !/from\s+now/.test(str)) return from
-  if (/today/.test(str)) from = date_modify(from, "day", "<")
-  const numberWords = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 } // prettier-ignore
-  str = str.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi, (match, tens, ones) => numberWords[match.toLowerCase()] || numberWords[tens.toLowerCase()] + (ones ? numberWords[ones.toLowerCase()] : 0)) // prettier-ignore
-  str = str.replace("today", "").replace("yesterday", "last day").replace("tomorrow", "next day")
-  const [_, hours = 0, minutes = 0, seconds = 0, ampm] = str.match(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i) || []
-  if ((hours && minutes) || ampm) from = date_modify(date_modify(from, "day", "<"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds }, "+")
+  if (/now/i.test(str) && !/from\s+now/.test(str)) return from
+  str = str.replace(/today/i, () => ((from = date_modify(from, "day", "<")), ""))
+  str = str.replace(/tomorrow/i, "next day").replace(/yesterday/i, "last day")
+  str = str.replace(NUMBER_REGEX, (match, tens, ones) => NUMBER[match.toLowerCase()] || NUMBER[tens.toLowerCase()] + (ones ? NUMBER[ones.toLowerCase()] : 0))
+  str = str.replace(RegExp(`(${MONTH.join("|")})`, "i"), (m) => (from = date_modify(date_modify(from, "year", "<"), { months: MONTH.indexOf(m.toLowerCase()) - (/last/.test(str) ? 12 : 0) }, "+"), ""))
+  str = str.replace(RegExp(`(${DAY.join("|")})`, "i"), (m) => (from = date_modify(date_modify(from, "week", "<"), { days: 1 + DAY.indexOf(m.toLowerCase()) - (/last/.test(str) ? 7 : 0) }, "+"), ""))
+  str = str.replace(/(\d+)(st|nd|rd|th)/i, (_, num) => (from = date_modify(date_modify(from, "day", "<"), { days: num - 1 }, "+"), ""))
+  str = str.replace(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i, (_, hours = 0, minutes = 0, seconds = 0, ampm) => (hours && minutes) || ampm ? ((from = date_modify(date_modify(from, "day", "<"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds }, "+")), "") : _) // prettier-ignore
   return date_modify(from, str, /(last|ago)/.test(str) ? "-" : "+")
 }
 function date_relative(from, to = new Date()) {
@@ -298,12 +303,12 @@ function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
     if (parts.includes("second")) options.second = "2-digit"
     return date.toLocaleString(lang, options)
   }
-  return DATE.reduce((str, [k, v, letter, jsfn, zeros = 2]) => {
+  return DATE.reduce((str, [unit, ms, letter, fn, zeros = 2]) => {
     return str.replace(RegExp(letter + "+", "g"), (m) => {
       if (letter === "Z") return date_getTimezone(date)
       if (letter === "W") return "W" + date_getWeek(date)
       if (letter === "Q") return "Q" + date_getQuarter(date)
-      let int = date["get" + jsfn]()
+      let int = date["get" + fn]()
       if (letter === "M") int = int + 1
       if (m.length > zeros) return ("0".repeat(zeros) + int).slice(-zeros) + letter
       if (m.length < `${int}`.length) return int

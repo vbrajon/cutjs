@@ -293,32 +293,6 @@ export default [
   ["Number.duration", -36666666, "-10 hours"],
   ["Number.duration", 1, "1 millisecond"],
   ["Number.duration", 0, ""],
-
-  // https://sugarjs.com/dates/
-  // https://github.com/tj/go-naturaldate/blob/master/naturaldate_test.go
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "now", new Date("2000-01-01T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "today", new Date("2000-01-01T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday", new Date("1999-12-31T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "tomorrow", new Date("2000-01-02T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "1 hour ago", new Date("1999-12-31T23:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "1 hour from now", new Date("2000-01-01T01:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "in one hour, two minutes and thirty-four seconds", new Date("2000-01-01T01:02:34")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "in two hours", new Date("2000-01-01T02:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "next hour", new Date("2000-01-01T01:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "last hour", new Date("1999-12-31T23:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "today 3pm", new Date("2000-01-01T15:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday at 3pm", new Date("1999-12-31T15:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "at 3pm", new Date("2000-01-01T15:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "4:45", new Date("2000-01-01T04:45:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "6:30:15pm in three days", new Date("2000-01-04T18:30:15")],
-
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "the 15th", new Date("2000-01-15T00:00:00")],
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "december 2nd", new Date("2000-12-02T00:00:00")],
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "the 4th of July", new Date("2000-07-04T00:00:00")],
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "next Tuesday", new Date("2000-01-04T00:00:00")],
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "end of February", new Date("2000-02-29T00:00:00")],
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "should throw an error at random string §@", new Date("Invalid")],
-
   ["Date.format", date, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, undefined, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, "", ""], // NOTE: this should return the default format
@@ -349,6 +323,37 @@ export default [
   ["Date.format", new Date("Invalid"), "long", "-"],
   ["Date.format", new Date("Invalid"), "mon, hour, minute", "-"],
   ["Date.format", new Date("Invalid"), "YYYY/MM/DD", "-"],
+  // https://sugarjs.com/dates/
+  // https://github.com/tj/go-naturaldate/blob/master/naturaldate_test.go
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "now", new Date("2000-01-01T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "today", new Date("2000-01-01T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday", new Date("1999-12-31T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "tomorrow", new Date("2000-01-02T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "1 hour ago", new Date("1999-12-31T23:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "1 hour from now", new Date("2000-01-01T01:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "in one hour, two minutes and thirty-four seconds", new Date("2000-01-01T01:02:34")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "in two hours", new Date("2000-01-01T02:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "next hour", new Date("2000-01-01T01:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "last hour", new Date("1999-12-31T23:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "today 3pm", new Date("2000-01-01T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday at 3pm", new Date("1999-12-31T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "at 3pm", new Date("2000-01-01T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "4:45", new Date("2000-01-01T04:45:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "6:30:15pm in three days", new Date("2000-01-04T18:30:15")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "the 15th at 3pm", new Date("2000-01-15T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "next Tuesday", new Date("2000-01-04T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "last Sunday", new Date("1999-12-26T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "december 2nd", new Date("2000-12-02T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "the 4th of July", new Date("2000-07-04T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "last 7th of July at 4pm", new Date("1999-07-07T16:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "first Monday of July", new Date("2000-07-03T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "15th Monday of July", new Date("2000-07-17T00:00:00")], // NOTE: error would be better than this illogic result for this illogical input
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "half an hour ago", new Date("1999-12-31T23:30:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "end of February", new Date("2000-02-29T00:00:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "8am PST", new Date("2000-01-01T" + offset)], // NOTE: UTC-7
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "8am CST", new Date("2000-01-01T" + offset)], // NOTE: UTC+8
+  // ["Date.parse", new Date("2000-01-01T00:00:00"), "18 Mar 2016", new Date("2016-03-18T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00:00"), "should throw an error at random string §@, but does nothing instead", new Date("2000-01-01T00:00:00")],
   ["Date.getWeek", new Date("2016-11-05T00:00"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month
   ["Date.getWeek", new Date("2000-01-01T00:00"), 52], // Saturday, Leep year
   ["Date.getWeek", new Date("2000-01-02T00:00"), 52],
@@ -384,6 +389,7 @@ export default [
   ["Date.plus", new Date("2000-01-01"), { weeks: 1 }, new Date("2000-01-08T00:00:00Z")],
   ["Date.plus", new Date("2000-01-01"), { quarters: 1 }, new Date("2000-04-01T00:00:00Z")],
   ["Date.plus", new Date("2000-01-01"), { months: 3 }, new Date("2000-04-01T00:00:00Z")],
+  ["Date.plus", new Date("2000-01-01"), { months: 300 }, new Date("2025-01-01T00:00:00Z")],
   ["Date.plus", new Date("2020-01-01"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03Z")],
   ["Date.plus", new Date("2020-01-01"), "+1 year +1 month +1 hour +2 minute -3 seconds", new Date("2021-02-01T01:01:57Z")], //! DEPRECATED syntax
   ["Date.plus", new Date("2018-11-30T00:00"), { months: 3 }, new Date("2019-02-28T00:00")],
