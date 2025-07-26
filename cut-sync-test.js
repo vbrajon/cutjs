@@ -118,7 +118,6 @@ export default [
   ["Array.group", [{ a: 1 }], "a", { 1: [{ a: 1 }] }],
   ["Array.group", [{ a: 1 }], "b", { undefined: [{ a: 1 }] }],
   ["Array.group", [{ a: 1, b: 2 }, { a: 1, b: 2 }], ["a", "b"], { 1: { 2: [{ a: 1, b: 2 }, { a: 1, b: 2 }] } }], // prettier-ignore
-  ["Array.reverse", [1, 2, 3], [3, 2, 1]],
   ["Array.sort", users.map((v) => v.age), [1, 2, 0, 3].map((i) => users[i].age)],
   ["Array.sort", users.slice(), "age", [1, 2, 0, 3].map((i) => users[i])],
   ["Array.sort", users.slice(), (v) => v.age, [1, 2, 0, 3].map((i) => users[i])],
@@ -158,24 +157,25 @@ export default [
   },
   {
     name: "Function.decorate",
-    fn: ({ decorate }) => decorate((x) => x, { around: (fn, x) => decorate(x * 2) * 2 })(1),
+    fn: ({ decorate }) => decorate((x) => x, (fn, x) => fn(x * 2) * 2)(1), // prettier-ignore
     output: 4,
   },
   {
     name: "Function.decorate",
-    fn: ({ decorate }) => decorate((x) => x, { before: (x) => x * 2 })(1),
+    fn: ({ decorate }) => decorate((x) => x, (fn, x) => fn(x * 2))(1), // prettier-ignore
     output: 2,
   },
   {
     name: "Function.decorate",
-    fn: ({ decorate }) => decorate((x) => x, { after: (x) => x * 2 })(1),
+    fn: ({ decorate }) => decorate((x) => x, (fn, x) => fn(x) * 2)(1), // prettier-ignore
     output: 2,
   },
   {
     name: "Function.decorate",
     fn: ({ decorate }) => {
-      const decorated = decorate((x) => x, {})
-      decorated.around = (fn, x) => 10
+      const decorated = decorate((x) => x, () => 1) // prettier-ignore
+      decorated.fn = (x) => 2
+      decorated.wrapper = (fn, x) => fn(x) * 5
       return decorated()
     },
     output: 10,

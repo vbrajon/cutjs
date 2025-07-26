@@ -68,12 +68,9 @@ const avgAgeByCity = usersByCity.map((g) => g.mean("age")) //~ {"Paris":35...}
 cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
 
 // Add a shortcut
-cut("shortcut", "transpose", {
-  before(args) {
-    const arr = args[0]
-    if (arr.some((row) => row.length !== arr[0].length)) throw new Error("Not a matrix")
-    return args
-  },
+cut("shortcut", "transpose", (fn, arr) => {
+  if (arr.some((row) => row.length !== arr[0].length)) throw new Error("Not a matrix")
+  return fn(arr)
 })
 
 // Add an alias
@@ -96,12 +93,11 @@ invalid.transpose() //! Error: Not a matrix
 | transform | _fromEntries_ | _find_      | memoize   | words      |          | getLastDate |        |
 |           | map           | _findIndex_ | every     | format     |          | getTimezone |        |
 |           | reduce        | _sort_      | wait      |            |          | format      |        |
-|           | filter        | _reverse_   | debounce  |            |          | modify      |        |
-|           | find          | group       | throttle  |            |          | plus        |        |
-|           | findIndex     | unique      |           |            |          | minus       |        |
-|           |               | min         |           |            |          | start       |        |
-|           |               | max         |           |            |          | end         |        |
-|           |               | sum         |           |            |          |             |        |
+|           | filter        | group       | debounce  |            |          | modify      |        |
+|           | find          | unique      | throttle  |            |          | plus        |        |
+|           | findIndex     | min         |           |            |          | minus       |        |
+|           |               | max         |           |            |          | start       |        |
+|           |               | sum         |           |            |          | end         |        |
 |           |               | mean        |           |            |          |             |        |
 |           |               | median      |           |            |          |             |        |
 

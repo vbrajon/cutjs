@@ -92,20 +92,13 @@ function array_median(arr) {
   return arr.length % 2 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2
 }
 // Function
-function function_decorate(fn, options) {
-  if (!options || fn.name === "decorated") return fn
-  if (options instanceof Function) options = { around: options }
+function function_decorate(fn, wrapper) {
+  if (!wrapper || fn.wrapper === wrapper) return fn
   function decorated(...args) {
-    args = decorated.before ? decorated.before(args) : args
-    if (!args) return null
-    if (!(args instanceof Array)) args = [args]
-    const output = decorated.around ? decorated.around(fn, ...args) : fn(...args)
-    return decorated.after ? decorated.after(output) : output
+    return decorated.wrapper(decorated.fn, ...args)
   }
-  decorated.before = options.before
-  decorated.after = options.after
-  decorated.around = options.around
   decorated.fn = fn
+  decorated.wrapper = wrapper
   return decorated
 }
 function function_promisify(fn) {
@@ -468,85 +461,73 @@ function cut(...args) {
     if (cut.constructors) return
     cut.constructors = {}
     cut.shortcuts = {}
-    // cut("shortcut", ["relative", "getWeek", "getQuarter", "getLastDate", "getTimezone", "format", "modify", "plus", "minus", "start", "end"], {
-    //   before(args) {
-    //     if (typeof args[0] === "string") args[0] = new Date(args[0].length <= 10 ? args[0] + "T00:00:00" : args[0])
-    //     return args
-    //   },
+    // cut("shortcut", ["relative", "getWeek", "getQuarter", "getLastDate", "getTimezone", "format", "modify", "plus", "minus", "start", "end"], (fn, ...args) => {
+    //   if (typeof args[0] === "string") args[0] = new Date(args[0].length <= 10 ? args[0] + "T00:00:00" : args[0])
+    //   return fn(...args)
     // })
-    cut("shortcut", "map", {
-      before(args) {
-        const f = (fn) => {
-          if (fn == null) return (x) => x
-          if (typeof fn === "function") return fn
-          if (fn instanceof Array) return (x) => fn.map((b) => access(x, b))
-          return (x) => access(x, fn)
-        }
-        args[1] = f(args[1])
-        return args
-      },
+    cut("shortcut", "map", (fn, ...args) => {
+      const f = (fn) => {
+        if (fn == null) return (x) => x
+        if (typeof fn === "function") return fn
+        if (fn instanceof Array) return (x) => fn.map((b) => access(x, b))
+        return (x) => access(x, fn)
+      }
+      args[1] = f(args[1])
+      return fn(...args)
     })
-    cut("shortcut", ["filter", "find", "findIndex"], {
-      before(args) {
-        const f = (fn) => {
-          if (fn == null) return (x) => x
-          if (typeof fn === "function") return fn
-          if (fn instanceof RegExp) return (x) => fn.test(x)
-          if (fn instanceof Array) return (x) => fn.some((v) => f(v)(x))
-          if (fn instanceof Object) return (x) => Object.keys(fn).every((k) => f(fn[k])(x[k]))
-          return (x) => equal(x, fn) || access(x, fn)
-        }
-        args[1] = f(args[1])
-        return args
-      },
+    cut("shortcut", ["filter", "find", "findIndex"], (fn, ...args) => {
+      const f = (fn) => {
+        if (fn == null) return (x) => x
+        if (typeof fn === "function") return fn
+        if (fn instanceof RegExp) return (x) => fn.test(x)
+        if (fn instanceof Array) return (x) => fn.some((v) => f(v)(x))
+        if (fn instanceof Object) return (x) => Object.keys(fn).every((k) => f(fn[k])(x[k]))
+        return (x) => equal(x, fn) || access(x, fn)
+      }
+      args[1] = f(args[1])
+      return fn(...args)
     })
-    cut("shortcut", "sort", {
-      before(args) {
-        function defaultSort(a, b) {
-          if (typeof a !== typeof b) return typeof a > typeof b ? 1 : -1
-          if (a == null || a instanceof Object) return 0
-          return a === b ? 0 : a > b ? 1 : -1
-        }
-        function directedSort(p, desc = /^-/.test(p)) {
-          p = ("" + p).replace(/^[+-]/, "")
-          return (a, b) => defaultSort(access(a, p), access(b, p)) * +(!desc || -1)
-        }
-        function multiSort(fns) {
-          return (a, b) => {
-            for (const fn of fns) {
-              const z = fn(a, b)
-              if (z) return z
-            }
+    cut("shortcut", "sort", (fn, ...args) => {
+      function defaultSort(a, b) {
+        if (typeof a !== typeof b) return typeof a > typeof b ? 1 : -1
+        if (a == null || a instanceof Object) return 0
+        return a === b ? 0 : a > b ? 1 : -1
+      }
+      function directedSort(p, desc = /^-/.test(p)) {
+        p = ("" + p).replace(/^[+-]/, "")
+        return (a, b) => defaultSort(access(a, p), access(b, p)) * +(!desc || -1)
+      }
+      function multiSort(fns) {
+        return (a, b) => {
+          for (const fn of fns) {
+            const z = fn(a, b)
+            if (z) return z
           }
         }
-        function f(fn) {
-          if (fn == null) return defaultSort
-          if (fn instanceof Array) return multiSort(fn.map(f))
-          if (fn instanceof Function && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
-          if (fn instanceof Function) return fn
-          if (fn instanceof Object) return Intl.Collator(fn.locale, { ...fn, numeric: true }).compare
-          return directedSort(fn)
-        }
-        // args[0] = args[0].slice() // NOTE: change default mutating behavior
-        args[1] = f(args[1])
-        return args
-      },
+      }
+      function f(fn) {
+        if (fn == null) return defaultSort
+        if (fn instanceof Array) return multiSort(fn.map(f))
+        if (fn instanceof Function && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
+        if (fn instanceof Function) return fn
+        if (fn instanceof Object) return Intl.Collator(fn.locale, { ...fn, numeric: true }).compare
+        return directedSort(fn)
+      }
+      // args[0] = args[0].slice() // NOTE: change default mutating behavior
+      args[1] = f(args[1])
+      return fn(...args)
     })
-    cut("shortcut", "group", {
-      before(args) {
-        args[1] = [].concat(args[1])
-        return args
-      },
+    cut("shortcut", "group", (fn, ...args) => {
+      args[1] = [].concat(args[1])
+      return fn(...args)
     })
-    cut("shortcut", "format", {
-      after(v) {
-        if (/^(Invalid Date|NaN|null|undefined)/.test(v)) return "-"
-        return v
-      },
+    cut("shortcut", "format", (fn, ...args) => {
+      const v = fn(...args)
+      return /^(Invalid Date|NaN|null|undefined)/.test(v) ? "-" : v
     })
-    cut("shortcut", ["sum", "min", "max", "mean", "median"], (fn, arr, ...args) => {
-      if (args[0]) return fn(cut.Array.map(arr, args[0]))
-      return fn(arr)
+    cut("shortcut", ["sum", "min", "max", "mean", "median"], (fn, ...args) => {
+      if (args[1]) return fn(cut.Array.map(...args))
+      return fn(...args)
     })
     cut(null, "is", is)
     cut(null, "equal", equal)

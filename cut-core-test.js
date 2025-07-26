@@ -140,7 +140,7 @@ export default [
       if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
 
       // SETUP
-      cut("shortcut", "reverse", { before: ([arr]) => [arr.slice()] })
+      cut("shortcut", "reverse", (fn, arr) => fn(arr.slice()))
       cut(Array, "reverse", "native")
 
       // UPDATED BEHAVIOR
@@ -162,14 +162,14 @@ export default [
   {
     name: "core - setup",
     fn: () => {
-      // cut.Object.fake = () => 1 / 3
-      // cut.shortcuts.fake = { after: (v) => Math.round(v * 100) }
+      // cut.Object.fake = 1 / 3
+      // cut.shortcuts.fake = (x) => Math.round(x * 100)
       if (cut.mode !== "window+prototype") throw new Error("cut.mode is not window+prototype")
-      cut("shortcut", "fake", { after: (v) => Math.round(v * 100) })
-      cut(Object, "fake", () => 1 / 3)
+      cut("shortcut", "fake", (x) => Math.round(x * 100))
+      cut(Object, "fake", 1 / 3)
       if (Object.fake() !== 33) throw new Error("Object.fake result is not 33 " + Object.fake())
-      cut(Object, "fake", null)
-      cut("shortcut", "fake", null)
+      cut(Object, "fake", undefined)
+      cut("shortcut", "fake", undefined)
       if (Object.fake) throw new Error("Object.fake still exists")
       if (Object.prototype.fake) throw new Error("Object.prototype.fake still exists")
       if (cut.fake) throw new Error("cut.fake still exists")
@@ -177,11 +177,9 @@ export default [
       if (cut.shortcuts.fake) throw new Error("cut.shortcuts.fake still exists")
 
       cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
-      cut("shortcut", "transpose", {
-        before(args) {
-          if (args[0].some((row) => row.length !== args[0][0].length)) throw new Error("Not a matrix")
-          return args
-        },
+      cut("shortcut", "transpose", (fn, arr) => {
+        if (arr.some((row) => row.length !== arr[0].length)) throw new Error("Not a matrix")
+        return fn(arr)
       })
       // Alias swap <> transpose
       cut(Array, "swap", cut.Array.transpose)
@@ -211,7 +209,7 @@ export default [
       if (Array.map) throw new Error("Array.map still exists")
       if (Number.abs) throw new Error("Number.abs still exists")
       const a = [3, 1, 2]
-      cut("shortcut", "reverse", { before: ([arr]) => [arr.slice()] })
+      cut("shortcut", "reverse", (fn, arr) => fn(arr.slice()))
       cut(Array, "reverse", "native")
       cut.reverse(a)
       if (a[0] !== 3) throw new Error("cut.reverse mutates the array")
