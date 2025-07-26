@@ -257,13 +257,13 @@ const NUMBER = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, e
 const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi // prettier-ignore
 function date_parse(from, str) {
   if (/now/i.test(str) && !/from\s+now/.test(str)) return from
-  str = str.replace(/today/i, () => ((from = date_modify(from, "day", "<")), ""))
+  str = str.replace(/today/i, () => ((from = date_start(from, "day")), ""))
   str = str.replace(/tomorrow/i, "next day").replace(/yesterday/i, "last day")
   str = str.replace(NUMBER_REGEX, (match, tens, ones) => NUMBER[match.toLowerCase()] || NUMBER[tens.toLowerCase()] + (ones ? NUMBER[ones.toLowerCase()] : 0))
-  str = str.replace(RegExp(`(${MONTH.join("|")})`, "i"), (m) => (from = date_modify(date_modify(from, "year", "<"), { months: MONTH.indexOf(m.toLowerCase()) - (/last/.test(str) ? 12 : 0) }, "+"), ""))
-  str = str.replace(RegExp(`(${DAY.join("|")})`, "i"), (m) => (from = date_modify(date_modify(from, "week", "<"), { days: 1 + DAY.indexOf(m.toLowerCase()) - (/last/.test(str) ? 7 : 0) }, "+"), ""))
-  str = str.replace(/(\d+)(st|nd|rd|th)/i, (_, num) => (from = date_modify(date_modify(from, "day", "<"), { days: num - 1 }, "+"), ""))
-  str = str.replace(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i, (_, hours = 0, minutes = 0, seconds = 0, ampm) => (hours && minutes) || ampm ? ((from = date_modify(date_modify(from, "day", "<"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds }, "+")), "") : _) // prettier-ignore
+  str = str.replace(RegExp(`(${MONTH.join("|")})`, "i"), (m) => ((from = date_plus(date_start(from, "year"), { months: MONTH.indexOf(m.toLowerCase()) - (/last/.test(str) ? 12 : 0) })), ""))
+  str = str.replace(RegExp(`(${DAY.join("|")})`, "i"), (m) => ((from = date_plus(date_start(from, "week"), { days: 1 + DAY.indexOf(m.toLowerCase()) - (/last/.test(str) ? 7 : 0) })), ""))
+  str = str.replace(/(\d+)(st|nd|rd|th)/i, (_, num) => ((from = date_plus(date_start(from, "day"), { days: num - 1 })), ""))
+  str = str.replace(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i, (_, hours = 0, minutes = 0, seconds = 0, ampm) => (hours && minutes) || ampm ? ((from = date_plus(date_start(from, "day"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds })), "") : _) // prettier-ignore
   return date_modify(from, str, /(last|ago)/.test(str) ? "-" : "+")
 }
 function date_relative(from, to = new Date()) {
@@ -527,15 +527,8 @@ function cut(...args) {
           if (fn instanceof Object) return Intl.Collator(fn.locale, { ...fn, numeric: true }).compare
           return directedSort(fn)
         }
-        // NOTE: do slice even if native behavior // if (args.length === 1 || (args[1] instanceof Function && args[1].length !== 1)) return args
-        args[0] = args[0].slice()
+        // args[0] = args[0].slice() // NOTE: change default mutating behavior
         args[1] = f(args[1])
-        return args
-      },
-    })
-    cut("shortcut", "reverse", {
-      before(args) {
-        args[0] = args[0].slice()
         return args
       },
     })
@@ -574,7 +567,6 @@ function cut(...args) {
     cut(Array, "find", "native")
     cut(Array, "findIndex", "native")
     cut(Array, "sort", "native")
-    cut(Array, "reverse", "native")
     cut(Array, "group", array_group)
     cut(Array, "unique", array_unique)
     cut(Array, "min", array_min)
@@ -621,5 +613,5 @@ function cut(...args) {
 }
 cut("mode", import.meta.url.split("?")[1] || "default")
 export default cut
-const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } = cut // prettier-ignore
-export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, reverse, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } // prettier-ignore
+const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } = cut // prettier-ignore
+export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } // prettier-ignore

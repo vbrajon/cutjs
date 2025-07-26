@@ -120,11 +120,10 @@ export default [
   ["Array.group", [{ a: 1, b: 2 }, { a: 1, b: 2 }], ["a", "b"], { 1: { 2: [{ a: 1, b: 2 }, { a: 1, b: 2 }] } }], // prettier-ignore
   ["Array.reverse", [1, 2, 3], [3, 2, 1]],
   ["Array.sort", users.map((v) => v.age), [1, 2, 0, 3].map((i) => users[i].age)],
-  ["Array.sort", users, "age", [1, 2, 0, 3].map((i) => users[i])],
-  ["Array.sort", users, "age", [1, 2, 0, 3].map((i) => users[i])],
-  ["Array.sort", users, (v) => v.age, [1, 2, 0, 3].map((i) => users[i])],
-  ["Array.sort", users, (a, b) => (a.age === b.age ? 0 : a.age > b.age ? 1 : -1), [1, 2, 0, 3].map((i) => users[i])],
-  ["Array.sort", users, function() { return arguments[0].age === arguments[1].age ? 0 : arguments[0].age > arguments[1].age ? 1 : -1 }, [1, 2, 0, 3].map((i) => users[i])], // prettier-ignore
+  ["Array.sort", users.slice(), "age", [1, 2, 0, 3].map((i) => users[i])],
+  ["Array.sort", users.slice(), (v) => v.age, [1, 2, 0, 3].map((i) => users[i])],
+  ["Array.sort", users.slice(), (a, b) => (a.age === b.age ? 0 : a.age > b.age ? 1 : -1), [1, 2, 0, 3].map((i) => users[i])],
+  ["Array.sort", users.slice(), function() { return arguments[0].age === arguments[1].age ? 0 : arguments[0].age > arguments[1].age ? 1 : -1 }, [1, 2, 0, 3].map((i) => users[i])], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [0, -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [v => v[0], -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [4, 5], [[null, 1], [1, 2], [null, 3]]], // prettier-ignore

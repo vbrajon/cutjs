@@ -132,18 +132,31 @@ export default [
   {
     name: "core - noMutation",
     fn: () => {
+      // DEFAULT BEHAVIOR
       const a = [3, 1, 2]
-      a.reverse()
-      if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
-      const reverse = cut.shortcuts.reverse
-      cut("shortcut", "reverse", null)
-      if (cut.shortcuts.reverse) throw new Error("cut.shortcuts.reverse still exists")
       a.reverse()
       if (a[0] === 3) throw new Error("Array.reverse does not mutate the array")
       a.reverse()
-      cut("shortcut", "reverse", reverse)
+      if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
+
+      // SETUP
+      cut("shortcut", "reverse", { before: ([arr]) => [arr.slice()] })
+      cut(Array, "reverse", "native")
+
+      // UPDATED BEHAVIOR
       a.reverse()
       if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
+
+      // CLEANUP
+      cut("shortcut", "reverse", undefined)
+      cut(Array, "reverse", undefined)
+      if (cut.reverse) throw new Error("cut.reverse still exists")
+      if (cut.Array.reverse) throw new Error("cut.Array.reverse still exists")
+      if (cut.shortcuts.reverse) throw new Error("cut.shortcuts.reverse still exists")
+
+      // DEFAULT BEHAVIOR
+      a.reverse()
+      if (a[0] === 3) throw new Error("Array.reverse does not mutate the array")
     },
   },
   {
@@ -198,6 +211,8 @@ export default [
       if (Array.map) throw new Error("Array.map still exists")
       if (Number.abs) throw new Error("Number.abs still exists")
       const a = [3, 1, 2]
+      cut("shortcut", "reverse", { before: ([arr]) => [arr.slice()] })
+      cut(Array, "reverse", "native")
       cut.reverse(a)
       if (a[0] !== 3) throw new Error("cut.reverse mutates the array")
       a.reverse()
