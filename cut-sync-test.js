@@ -13,25 +13,25 @@ const mixedClone = [false, true, (x) => x, -1, 0, Infinity, [], { a: [{ b: 1 }] 
 
 export default [
   //? Lodash _.is
-  ["Generic.is", [1], Array, true],
-  ["Generic.is", new ArrayBuffer(1), ArrayBuffer, true],
-  ["Generic.is", true, Boolean, true],
-  // ["Generic.is", new Buffer(1), Buffer, true],
-  ["Generic.is", new Date(), Date, true],
-  ["Generic.is", new Error(), Error, true],
-  ["Generic.is", () => 1, Function, true],
-  ["Generic.is", new Map(), Map, true],
+  ["Generic.is", Array, [1], true],
+  ["Generic.is", ArrayBuffer, new ArrayBuffer(1), true],
+  ["Generic.is", Boolean, true, true],
+  // ["Generic.is", Buffer, new Buffer(1), true],
+  ["Generic.is", Date, new Date(), true],
+  ["Generic.is", Error, new Error(), true],
+  ["Generic.is", Function, () => 1, true],
+  ["Generic.is", Map, new Map(), true],
   ["Generic.is", NaN, NaN, true],
   ["Generic.is", null, null, true],
-  ["Generic.is", 1, Number, true],
-  ["Generic.is", {}, Object, true],
-  ["Generic.is", /1/, RegExp, true],
-  ["Generic.is", new Set(), Set, true],
-  ["Generic.is", "str", String, true],
-  ["Generic.is", Symbol(1), Symbol, true],
+  ["Generic.is", Number, 1, true],
+  ["Generic.is", {}, Object, true], // TODO: determine why bun test errors when swapping {} and Object
+  ["Generic.is", RegExp, /1/, true],
+  ["Generic.is", Set, new Set(), true],
+  ["Generic.is", String, "str", true],
+  ["Generic.is", Symbol, Symbol(1), true],
   ["Generic.is", undefined, undefined, true],
-  ["Generic.is", new WeakMap(), WeakMap, true],
-  ["Generic.is", new WeakSet(), WeakSet, true],
+  ["Generic.is", WeakMap, new WeakMap(), true],
+  ["Generic.is", WeakSet, new WeakSet(), true],
   //? Lodash _.is ignored: Arguments / ArrayLike / ArrayLikeObject / Element / Empty / Equal / EqualWith / Finite / Integer / Length / Match / MatchWith / Native / Nil / ObjectLike / PlainObject / SafeInteger / TypedArray
   ["Generic.is", null, "Null"],
   ["Generic.is", void 0, "Undefined"],
@@ -57,6 +57,7 @@ export default [
   ["Generic.access", { a: { b: [1, 2, 3] } }, ".a.b.length", 3], // != lodash
   ["Generic.access", { a: { b: [1, 2, 3] } }, '["a"]["b"].length', 3],
   ["Generic.access", { a: { b: [1, 2, 3] } }, { a: "a.b", b: "a.b.length" }, { a: [1, 2, 3], b: 3 }], // != lodash
+  ["Generic.access", { a: { b: [1, 2, 3] } }, { a: ["a", "b"], b: "a.b.length" }, { a: [1, 2, 3], b: 3 }], // != lodash
   ["Generic.access", [{ a: { b: [1, 2, 3] } }], "0.a.b.length", 3],
   ["Generic.access", { a: { "b.c": 1 } }, 'a["b.c"]', 1],
   ["Generic.access", { a: { b: 1 } }, "a.b", 1],

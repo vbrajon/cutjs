@@ -4,10 +4,10 @@ function type(a) {
   if (!a || !a.constructor) return Object.prototype.toString.call(a).slice(8, -1)
   return a.constructor.name
 }
-function is(a, constructor) {
+function is(a, b) {
   if (arguments.length === 1) return type(a)
-  if (!constructor) return a === constructor || isNaN(a) === isNaN(constructor)
-  return a?.constructor === constructor
+  if (!b) return a === b || isNaN(a) === isNaN(b)
+  return a?.constructor === b || b?.constructor === a
 }
 function equal(a, b) {
   if (a === b) return true
