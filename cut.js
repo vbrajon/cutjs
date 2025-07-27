@@ -488,10 +488,11 @@ function cut(...args) {
       return fn(...args)
     })
     cut("shortcut", "sort", (fn, ...args) => {
+      const { compare } = Intl.Collator(undefined, { numeric: true })
       function defaultSort(a, b) {
         if (typeof a !== typeof b) return typeof a > typeof b ? 1 : -1
-        if (a == null || a instanceof Object) return 0
-        return a === b ? 0 : a > b ? 1 : -1
+        if (typeof a === "number") return a === b ? 0 : a > b ? 1 : -1
+        return compare(a, b)
       }
       function directedSort(p, desc = /^-/.test(p)) {
         p = ("" + p).replace(/^[+-]/, "")

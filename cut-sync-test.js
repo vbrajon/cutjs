@@ -8,11 +8,8 @@ const user = users[0]
 const str = "i_am:The\n1\tAND , Only."
 const date = new Date("2019-01-20T10:09:08")
 const offset = ((offset = date.getTimezoneOffset()) => `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`)()
-const mixed = [[], -1, /a/gi, 0, Infinity, NaN, new Date("2020"), { a: [{ b: 1 }] }, "a", false, null, true, undefined]
-const mixedClone = [[], -1, /a/gi, 0, Infinity, NaN, new Date("2020"), { a: [{ b: 1 }] }, "a", false, null, true, undefined]
-// const shuffle = (arr, r) => (arr.forEach((v, i) => ((r = Math.floor(Math.random() * i)), ([arr[i], arr[r]] = [arr[r], arr[i]]))), arr)
-// const mixedNative = [[], -1, /a/gi, 0, Infinity, NaN, new Date('2020'), { a: [{ b: 1 }] }, 'a', false, null, true, x => x, undefined]
-// const mixedShuffled = shuffle([[], -1, /a/gi, 0, Infinity, NaN, new Date('2020'), { a: [{ b: 1 }] }, 'a', false, null, true, x => x, undefined])
+const mixed = [false, true, (x) => x, -1, 0, Infinity, [], { a: [{ b: 1 }] }, /a/gi, null, new Date("2020"), "a", undefined]
+const mixedClone = [false, true, (x) => x, -1, 0, Infinity, [], { a: [{ b: 1 }] }, /a/gi, null, new Date("2020"), "a", undefined]
 
 export default [
   //? Lodash _.is
@@ -40,9 +37,11 @@ export default [
   ["Generic.is", void 0, "Undefined"],
   ["Generic.is", undefined, "Undefined"],
   ["Generic.is", NaN, "NaN"],
+  ["Generic.is", Infinity, "Number"],
   ["Generic.is", () => 1, "Function"],
   // { name: "Generic.is", fuzz: true, errors: [] },
   ["Generic.is", void 0, undefined, true],
+  ["Generic.is", NaN, NaN, true],
   ["Generic.is", NaN, Number, true], //! NaN is also a Number
   ["Generic.is", 1, NaN, false],
   //? Lodash _.isEqual
@@ -126,7 +125,9 @@ export default [
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [0, -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [v => v[0], -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [4, 5], [[null, 1], [1, 2], [null, 3]]], // prettier-ignore
+  ["Array.sort", ["10 arbres", "3 arbres", "cafetière", "Café", "café", "Adieu"], ["3 arbres", "10 arbres", "Adieu", "café", "Café", "cafetière"]],
   ["Array.sort", ["10 arbres", "3 arbres", "cafetière", "Café", "café", "Adieu"], { locale: "fr" }, ["3 arbres", "10 arbres", "Adieu", "café", "Café", "cafetière"]],
+  ["Array.sort", mixed.slice().sort(() => Math.random() - 0.5), mixed],
   {
     name: "Array.sort",
     fn: ({ sort }) => {
