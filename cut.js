@@ -205,30 +205,25 @@ function number_duration(num) {
   const [k, v] = units.find(([k, v]) => v && v <= Math.abs(num) * 1.1)
   return Math.round(+num / +v) + " " + k + (Math.abs(Math.round(+num / +v)) > 1 ? "s" : "")
 }
-const CURRENCY = Intl.supportedValuesOf("currency")
-CURRENCY.forEach((k) => {
-  const symbol = new Intl.NumberFormat("en", { style: "currency", currency: k }).format(0)[0]
-  CURRENCY[k] = k
-  CURRENCY[symbol] = k
-})
-function number_format(num, v0, v1) {
+const CURRENCY = Intl.supportedValuesOf("currency").reduce((acc, k) => ((acc[new Intl.NumberFormat("en", { style: "currency", currency: k }).format(0).split(/\s?0/)[0]] = acc[k] = k), acc), {})
+function number_format(num, str, options = {}) {
   if (typeof num === "bigint") num = Number(num)
-  if (!v0) return +(+num.toPrecision(15)).toFixed(15)
-  if (typeof v0 === "number") return num.toExponential(v0 - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazy", "kMGTPEZY"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
-  if (CURRENCY[v0]) return Intl.NumberFormat("en", { style: "currency", currency: CURRENCY[v0], minimumFractionDigits: 0 }).format(num)
-  if (/^[a-zA-Z]{2}/.test(v0)) return Intl.NumberFormat(v0, v1).format(num)
-  if (v0.length === 2) v0 = v0 + "#".repeat(15)
-  if (v0.length === 1) v0 = v0 + "."
-  const [thousandSep, decimalSep] = [""].concat(v0.match(/[^0#]/g)).slice(-2)
-  const [thousandPart, decimalPart] = v0.split(decimalSep)
-  return new Intl.NumberFormat("en", {
-    minimumIntegerDigits: (thousandPart.match(/0/g) || []).length || 1,
-    minimumFractionDigits: (decimalPart.match(/0/g) || []).length,
-    maximumFractionDigits: (decimalPart.match(/[0#]/g) || []).length,
-    signDisplay: /[+-]/.test(v0) ? "always" : undefined,
-  })
-    .format(num)
-    .replace(/[,.]/g, (m) => (m === "," ? thousandSep : decimalSep))
+  if (!str) return +(+num.toPrecision(15)).toFixed(15)
+  if (typeof str === "number") return num.toExponential(str - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazyrq", "kMGTPEZYRQ"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
+  if (/^[a-zA-Z]{2,3}(-[a-zA-Z]{2,4})?(-[a-zA-Z0-9]{2,3})?$/.test(str) && Intl.NumberFormat.supportedLocalesOf(str).length) return Intl.NumberFormat(str, options).format(num)
+  str = str.replace(RegExp(`(${Object.keys(CURRENCY).join("|").replace(/\$/g, "\\$")})`), (m) => ((options.style = "currency"), (options.currency = CURRENCY[m]), ""))
+  str = str.replace(/[a-zA-Z]+/g, () => "")
+  str = str.replace(/[+-]/g, () => ((options.signDisplay = "exceptZero"), ""))
+  str = str.replace(/[%]/g, () => ((options.style = "percent"), ""))
+  if (str.length === 2) str = str + "#".repeat(15)
+  if (str.length === 0) str = ","
+  if (str.length === 1) str = str + "."
+  const [thousandSep, decimalSep] = [""].concat(str.match(/[^0#]/g)).slice(-2)
+  const [thousandPart, decimalPart] = str.split(decimalSep)
+  options.minimumIntegerDigits = (thousandPart.match(/0/g) || []).length || 1
+  options.minimumFractionDigits = (decimalPart.match(/0/g) || []).length
+  options.maximumFractionDigits = (decimalPart.match(/[0#]/g) || []).length
+  return new Intl.NumberFormat("en", options).format(num).replace(/[,.]/g, (m) => (m === "," ? thousandSep : decimalSep))
 }
 // Date: unit, ms, letter, fn, zeros
 const DATE = [
@@ -281,10 +276,10 @@ function date_setTimezone(date, timezone = "+00:00") {
   const offset = +timezone.slice(0, 3) * 60 + +timezone.slice(4)
   return new Date(+date + (offset + date.getTimezoneOffset()) * 60 * 1000)
 }
-function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
+function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", locale = "en") {
   if (isNaN(date.getTime())) return "-"
   const parts = format.split(",").map((v) => v.trim())
-  if (parts.some((v) => ["full", "long", "medium", "short"].includes(v))) return date.toLocaleString(lang, { dateStyle: parts[0] || undefined, timeStyle: parts[1] })
+  if (parts.some((v) => ["full", "long", "medium", "short"].includes(v))) return date.toLocaleString(locale, { dateStyle: parts[0] || undefined, timeStyle: parts[1] })
   if (parts.some((v) => ["year", "month", "weekday", "day", "hour", "minute", "second"].includes(v))) {
     const options = {}
     if (parts.includes("year")) options.year = "numeric"
@@ -294,7 +289,7 @@ function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", lang = "en") {
     if (parts.includes("hour")) options.hour = "2-digit"
     if (parts.includes("minute")) options.minute = "2-digit"
     if (parts.includes("second")) options.second = "2-digit"
-    return date.toLocaleString(lang, options)
+    return date.toLocaleString(locale, options)
   }
   return DATE.reduce((str, [unit, ms, letter, fn, zeros = 2]) => {
     return str.replace(RegExp(letter + "+", "g"), (m) => {
