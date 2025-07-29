@@ -17,15 +17,15 @@ function equal(a, b) {
   if (Object.keys(a).length !== Object.keys(b).length) return false
   return Object.keys(a).every((k) => equal(a[k], b[k]))
 }
-access.dotpath = function_memoize((str) => str.split(/(?:\.|\[["']?([^\]"']*)["']?\])/).filter((x) => x))
 function access(obj, path) {
   if (obj == null || path == null) return obj
-  if (Object.prototype.hasOwnProperty.call(obj, path)) return obj[path]
+  if (Object.hasOwn(obj, path)) return obj[path]
   if (typeof path === "string") return access(obj, access.dotpath(path))
   if (path instanceof Function) return path(obj)
   if (path instanceof Array) return path.reduce((a, p) => (a && a[p] != null ? a[p] : undefined), obj)
   if (path instanceof Object) return Object.entries(path).reduce((a, [k, v]) => ((a[k] = access(obj, v)), a), {})
 }
+access.dotpath = function_memoize((str) => str.split(/(?:\.|\[["']?([^\]"']*)["']?\])/).filter((x) => x))
 function transform(obj, fn) {
   function inner(o, path) {
     if (!o || typeof o !== "object") return fn(o, path)
@@ -64,7 +64,7 @@ function array_group(arr, keys) {
     keys.reduce((acc, k, i) => {
       const key = access(v, k)
       const last = i === keys.length - 1
-      const hasKey = Object.prototype.hasOwnProperty.call(acc, key)
+      const hasKey = Object.hasOwn(acc, key)
       if (last) return (acc[key] = hasKey ? acc[key].concat([v]) : [v])
       return (acc[key] = hasKey ? acc[key] : {})
     }, acc)
@@ -117,7 +117,7 @@ function function_partial(fn, ...outer) {
 function function_memoize(fn, hash = JSON.stringify) {
   function memoized(...args) {
     const key = hash(args)
-    if (!Object.prototype.hasOwnProperty.call(memoized.cache, key)) memoized.cache[key] = fn(...args)
+    if (!Object.hasOwn(memoized.cache, key)) memoized.cache[key] = fn(...args)
     return memoized.cache[key]
   }
   memoized.cache = {}
@@ -125,7 +125,7 @@ function function_memoize(fn, hash = JSON.stringify) {
 }
 function function_every(fn, ms = 0, repeat = Infinity, immediate = true) {
   if (immediate) fn()
-  fn.id = setInterval(function loop() {
+  fn.id = setInterval(() => {
     if (--repeat > +immediate) return fn()
     fn.resolve(fn())
     fn.stop()
@@ -142,9 +142,9 @@ function function_wait(fn, ms) {
   return function_every(fn, ms, 1, false)
 }
 function function_debounce(fn, ms = 0) {
-  return function debounced() {
+  return function debounced(...args) {
     clearTimeout(fn.id)
-    fn.id = setTimeout(() => fn(...arguments), ms)
+    fn.id = setTimeout(() => fn(...args), ms)
   }
 }
 function function_throttle(fn, ms = 0) {
@@ -181,7 +181,7 @@ function string_words(str) {
     .filter((x) => x)
 }
 function string_format(str, ...args) {
-  if (!args.length) args = ["title"]
+  if (!args.length) args[0] = "title"
   if (["-", "dash"].includes(args[0])) args[0] = "kebab"
   if (["_", "underscore"].includes(args[0])) args[0] = "snake"
   if (["title", "pascal", "camel", "kebab", "snake"].includes(args[0])) {
@@ -192,8 +192,7 @@ function string_format(str, ...args) {
     return words.join(sep)
   }
   let i = 0
-  let fn
-  fn = (m) => access(args, m)
+  let fn = (m) => access(args, m)
   if (typeof args[0] === "object") fn = (m) => access(args[0], m)
   if (typeof args[0] === "function") fn = args.shift()
   return str.replace(/\{[^{}]*\}/g, (m) => String(fn(m.slice(1, -1) || i, i++)).replace(/^(null|undefined)$/, ""))
@@ -203,21 +202,21 @@ function number_duration(num) {
   if (!num) return ""
   const units = DATE.slice().reverse()
   const [k, v] = units.find(([k, v]) => v && v <= Math.abs(num) * 1.1)
-  return Math.round(+num / +v) + " " + k + (Math.abs(Math.round(+num / +v)) > 1 ? "s" : "")
+  return `${Math.round(+num / +v)} ${k}${Math.abs(Math.round(+num / +v)) > 1 ? "s" : ""}`
 }
 const CURRENCY = Intl.supportedValuesOf("currency").reduce((acc, k) => ((acc[new Intl.NumberFormat("en", { style: "currency", currency: k }).format(0).split(/\s?0/)[0]] = acc[k] = k), acc), {})
 function number_format(num, str, options = {}) {
   if (typeof num === "bigint") num = Number(num)
   if (!str) return +(+num.toPrecision(15)).toFixed(15)
-  if (typeof str === "number") return num.toExponential(str - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +(n + "e" + (e - Math.floor(e / 3) * 3)) + (["mµnpfazyrq", "kMGTPEZYRQ"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
-  if (/^[a-zA-Z]{2,3}(-[a-zA-Z]{2,4})?(-[a-zA-Z0-9]{2,3})?$/.test(str) && Intl.NumberFormat.supportedLocalesOf(str).length) return Intl.NumberFormat(str, options).format(num)
+  if (typeof str === "number") return num.toExponential(str - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +`${n}e${e - Math.floor(e / 3) * 3}` + (["mµnpfazyrq", "kMGTPEZYRQ"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
+  if (/^[a-zA-Z]{2,3}(-[a-zA-Z]{2,4})?(-[a-zA-Z0-9]{2,3})?$/.test(str) && Intl.NumberFormat.supportedLocalesOf(str).length) return new Intl.NumberFormat(str, options).format(num)
   str = str.replace(RegExp(`(${Object.keys(CURRENCY).join("|").replace(/\$/g, "\\$")})`), (m) => ((options.style = "currency"), (options.currency = CURRENCY[m]), ""))
   str = str.replace(/[a-zA-Z]+/g, () => "")
   str = str.replace(/[+-]/g, () => ((options.signDisplay = "exceptZero"), ""))
   str = str.replace(/[%]/g, () => ((options.style = "percent"), ""))
   if (str.length === 2) str = str + "#".repeat(15)
   if (str.length === 0) str = ","
-  if (str.length === 1) str = str + "."
+  if (str.length === 1) str += "."
   const [thousandSep, decimalSep] = [""].concat(str.match(/[^0#]/g)).slice(-2)
   const [thousandPart, decimalPart] = str.split(decimalSep)
   options.minimumIntegerDigits = (thousandPart.match(/0/g) || []).length || 1
@@ -270,7 +269,7 @@ function date_getLastDate(date) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
 }
 function date_getTimezone(date, offset = date.getTimezoneOffset()) {
-  return `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`
+  return `${offset > 0 ? "-" : "+"}${`0${~~Math.abs(offset / 60)}`.slice(-2)}:${`0${Math.abs(offset % 60)}`.slice(-2)}`
 }
 function date_setTimezone(date, timezone = "+00:00") {
   const offset = +timezone.slice(0, 3) * 60 + +timezone.slice(4)
@@ -292,11 +291,11 @@ function date_format(date, format = "YYYY-MM-DDThh:mm:ssZ", locale = "en") {
     return date.toLocaleString(locale, options)
   }
   return DATE.reduce((str, [unit, ms, letter, fn, zeros = 2]) => {
-    return str.replace(RegExp(letter + "+", "g"), (m) => {
+    return str.replace(RegExp(`${letter}+`, "g"), (m) => {
       if (letter === "Z") return date_getTimezone(date)
-      if (letter === "W") return "W" + date_getWeek(date)
-      if (letter === "Q") return "Q" + date_getQuarter(date)
-      let int = date["get" + fn]()
+      if (letter === "W") return `W${date_getWeek(date)}`
+      if (letter === "Q") return `Q${date_getQuarter(date)}`
+      let int = date[`get${fn}`]()
       if (letter === "M") int = int + 1
       if (m.length > zeros) return ("0".repeat(zeros) + int).slice(-zeros) + letter
       if (m.length < `${int}`.length) return int
@@ -308,7 +307,7 @@ function date_modify(date, options, sign) {
   if (!options || !sign) return date
   if (typeof options === "string") {
     options = { str: options }
-    options.str.replace(/([+-.\d]*)\s*(millisecond|second|minute|hour|day|week|month|quarter|year)/gi, (m, n, u) => (options[u + "s"] = +n || 1 - +(n === "0")))
+    options.str.replace(/([+-.\d]*)\s*(millisecond|second|minute|hour|day|week|month|quarter|year)/gi, (m, n, u) => (options[`${u}s`] = +n || 1 - +(n === "0")))
   }
   if (options.weeks) options.days = options.days || 0 + options.weeks * 7
   if (options.quarters) options.months = options.months || 0 + options.quarters * 3
@@ -320,22 +319,22 @@ function date_modify(date, options, sign) {
   const d = new Date(date)
   const units = DATE.filter((unit) => ["millisecond", "second", "minute", "hour", "day", "month", "year"].includes(unit[0]))
   const fn = {
-    "+": (unit, n) => d["set" + unit[3]](d["get" + unit[3]]() + n),
-    "-": (unit, n) => d["set" + unit[3]](d["get" + unit[3]]() - n),
+    "+": (unit, n) => d[`set${unit[3]}`](d[`get${unit[3]}`]() + n),
+    "-": (unit, n) => d[`set${unit[3]}`](d[`get${unit[3]}`]() - n),
     "<"(unit) {
       const index = units.findIndex((u) => u === unit)
-      return units.slice(0, index).map((unit) => d["set" + unit[3]](unit[3] === "Date" ? 1 : 0))
+      return units.slice(0, index).map((unit) => d[`set${unit[3]}`](unit[3] === "Date" ? 1 : 0))
     },
     ">"(unit) {
       const index = units.findIndex((u) => u === unit)
       units
         .slice(0, index)
         .reverse()
-        .map((unit) => d["set" + unit[3]]({ Month: 11, Date: date_getLastDate(d), Hours: 23, Minutes: 59, Seconds: 59, Milliseconds: 999 }[unit[3]]))
+        .map((unit) => d[`set${unit[3]}`]({ Month: 11, Date: date_getLastDate(d), Hours: 23, Minutes: 59, Seconds: 59, Milliseconds: 999 }[unit[3]]))
     },
   }[sign]
-  units.forEach((unit) => options[unit[0] + "s"] && fn(unit, options[unit[0] + "s"]))
-  if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[k + "s"]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[k + "s"])) d.setDate(0) // prettier-ignore
+  units.forEach((unit) => options[`${unit[0]}s`] && fn(unit, options[`${unit[0]}s`]))
+  if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[`${k  }s`]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[`${k  }s`])) d.setDate(0) // prettier-ignore
   if (["-", "+"].includes(sign) && date.getTimezoneOffset() !== d.getTimezoneOffset()) d.setTime(+d + (date.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000)
   return d
 }
@@ -374,7 +373,7 @@ function cut(...args) {
   function wrap(initial) {
     let result
     const path = [initial]
-    const proxy = new Proxy(() => {}, {
+    const proxy = new Proxy(() => null, {
       get(target, prop) {
         if (result) return result[prop]
         if (prop === "then") return (resolve) => resolve(path)
@@ -432,7 +431,7 @@ function cut(...args) {
       value = (x, ...args) => native.call(x, ...args)
       value.native = native
     }
-    const shortcut = cut.shortcuts.hasOwnProperty(key) && cut.shortcuts[key]
+    const shortcut = Object.hasOwn(cut.shortcuts, key) && cut.shortcuts[key]
     const fn = function_decorate(value, shortcut)
     cut.constructors[constructor.name] = constructor
     cut[constructor.name] = cut[constructor.name] || {}
@@ -446,8 +445,8 @@ function cut(...args) {
       window[key] = cut[key]
     }
     if (cut.mode?.includes("prototype")) {
-      let f = { [key]: function() { return fn(this, ...arguments) } } // prettier-ignore
-      if (constructor.name === "Generic") f = { [key]: function() { return this === cut[arguments?.[0]?.constructor.name] ? fn(...arguments) : fn(this, ...arguments)} } // prettier-ignore
+      let f = { [key](...args) { return fn(this, ...args) } } // prettier-ignore
+      if (constructor.name === "Generic") f = { [key](...args) { return this === cut[args[0]?.constructor.name] ? fn(...args) : fn(this, ...args)} } // prettier-ignore
       Object.defineProperty(constructor.prototype, key, { writable: true, configurable: true, value: f[key] }) // enumerable: false
       if (value.native) constructor.prototype[key].native = value.native
     }
@@ -483,14 +482,14 @@ function cut(...args) {
       return fn(...args)
     })
     cut("shortcut", "sort", (fn, ...args) => {
-      const { compare } = Intl.Collator(undefined, { numeric: true })
+      const { compare } = new Intl.Collator(undefined, { numeric: true })
       function defaultSort(a, b) {
         if (typeof a !== typeof b) return typeof a > typeof b ? 1 : -1
         if (typeof a === "number") return a === b ? 0 : a > b ? 1 : -1
         return compare(a, b)
       }
       function directedSort(p, desc = /^-/.test(p)) {
-        p = ("" + p).replace(/^[+-]/, "")
+        p = `${p}`.replace(/^[+-]/, "")
         return (a, b) => defaultSort(access(a, p), access(b, p)) * +(!desc || -1)
       }
       function multiSort(fns) {
@@ -506,7 +505,6 @@ function cut(...args) {
         if (fn instanceof Array) return multiSort(fn.map(f))
         if (fn instanceof Function && fn.length === 1) return (x, y) => defaultSort(fn(x), fn(y))
         if (fn instanceof Function) return fn
-        if (fn instanceof Object) return Intl.Collator(fn.locale, { ...fn, numeric: true }).compare
         return directedSort(fn)
       }
       // args[0] = args[0].slice() // NOTE: change default mutating behavior

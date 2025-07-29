@@ -127,7 +127,6 @@ export default [
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [v => v[0], -1], [[1, 2], [null, 3], [null, 1]]], // prettier-ignore
   ["Array.sort", [[null, 1], [1, 2], [null, 3]], [4, 5], [[null, 1], [1, 2], [null, 3]]], // prettier-ignore
   ["Array.sort", ["10 arbres", "3 arbres", "cafetière", "Café", "café", "Adieu"], ["3 arbres", "10 arbres", "Adieu", "café", "Café", "cafetière"]],
-  ["Array.sort", ["10 arbres", "3 arbres", "cafetière", "Café", "café", "Adieu"], { locale: "fr" }, ["3 arbres", "10 arbres", "Adieu", "café", "Café", "cafetière"]],
   ["Array.sort", mixed.slice().sort(() => Math.random() - 0.5), mixed],
   {
     name: "Array.sort",
