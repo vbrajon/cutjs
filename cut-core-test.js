@@ -208,6 +208,16 @@ export default [
       if (Array.prototype._map) throw new Error("Array.prototype._map still exists")
       if (Array.map) throw new Error("Array.map still exists")
       if (Number.abs) throw new Error("Number.abs still exists")
+      let error
+      try {
+        cut.format(1.23456789)
+        cut.format("hello world")
+        cut.format(new Date())
+        cut.format(/1/)
+      } catch (e) {
+        error = e
+      }
+      if (!error || error.message !== "format does not exist on RegExp") throw new Error("cut.format does not throw on RegExp")
       const a = [3, 1, 2]
       cut("shortcut", "reverse", (fn, arr) => fn(arr.slice()))
       cut(Array, "reverse", "native")

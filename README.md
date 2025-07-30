@@ -93,11 +93,11 @@ invalid.transpose() //! Error: Not a matrix
 |           | map           | _findIndex_ | every     | format     |          | getTimezone |        |
 |           | reduce        | _sort_      | wait      |            |          | format      |        |
 |           | filter        | group       | debounce  |            |          | modify      |        |
-|           | find          | unique      | throttle  |            |          | plus        |        |
-|           | findIndex     | min         |           |            |          | minus       |        |
-|           |               | max         |           |            |          | start       |        |
-|           |               | sum         |           |            |          | end         |        |
-|           |               | mean        |           |            |          |             |        |
+|           | find          | unique      | throttle  |            |          | parse       |        |
+|           | findIndex     | min         |           |            |          | plus        |        |
+|           |               | max         |           |            |          | minus       |        |
+|           |               | sum         |           |            |          | start       |        |
+|           |               | mean        |           |            |          | end         |        |
 |           |               | median      |           |            |          |             |        |
 
 ## Development
