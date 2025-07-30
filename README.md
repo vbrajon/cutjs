@@ -30,7 +30,7 @@ import "cut?window+prototype"
 // Format a Date
 new Date("2000").format("YYYY-QQ") //= "2000-Q1"
 new Date("2000").format("day, month, year", "en") //= "January 1, 2000"
-new Date("2000T00:00").format("full, short", "ja") //= "2000年1月1日土曜日 0:00"
+new Date("2000T00:00").format("long, short", "ja") //= "2000年1月1日 0:00"
 
 // Format a String
 "hello_world".format() //= "Hello World"
@@ -38,12 +38,11 @@ new Date("2000T00:00").format("full, short", "ja") //= "2000年1月1日土曜日
 "{}_{}".format(["hello", "world"]) //= "hello_world"
 
 // Format a Number
-0.30000000000000004.format() //= 0.3
+0.30000000000000004.format() //= "0.3"
+0.111.format("+0.##%") //= "+11.1%"
 123456.789.format(2) //= "120k"
-123456.789.format("en") //= "123,456.789"
-123456.789.format("$") //= "$123,456.79"
-123456.789.format("_") //= "123_457"
-123456.789.format("0_000.00") //= "123_456.79"
+123456.789.format(".") //= "123,457"
+123456.789.format("CN¥") //= "CN¥123,456.79"
 
 // Parse a Date
 new Date("2000T00:00").parse("tomorrow") //= new Date("2000-01-02T00:00:00+01:00")

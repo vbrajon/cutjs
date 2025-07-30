@@ -205,24 +205,21 @@ function number_duration(num) {
   return `${Math.round(+num / +v)} ${k}${Math.abs(Math.round(+num / +v)) > 1 ? "s" : ""}`
 }
 const CURRENCY = Intl.supportedValuesOf("currency").reduce((acc, k) => ((acc[new Intl.NumberFormat("en", { style: "currency", currency: k }).format(0).split(/\s?0/)[0]] = acc[k] = k), acc), {})
-function number_format(num, str, options = {}) {
+function number_format(num, str = "", options = { locale: "en" }) {
   if (typeof num === "bigint") num = Number(num)
-  if (!str) return +(+num.toPrecision(15)).toFixed(15)
-  if (typeof str === "number") return num.toExponential(str - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +`${n}e${e - Math.floor(e / 3) * 3}` + (["mµnpfazyrq", "kMGTPEZYRQ"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || "")) // prettier-ignore
-  if (/^[a-zA-Z]{2,3}(-[a-zA-Z]{2,4})?(-[a-zA-Z0-9]{2,3})?$/.test(str) && Intl.NumberFormat.supportedLocalesOf(str).length) return new Intl.NumberFormat(str, options).format(num)
-  str = str.replace(RegExp(`(${Object.keys(CURRENCY).join("|").replace(/\$/g, "\\$")})`), (m) => ((options.style = "currency"), (options.currency = CURRENCY[m]), ""))
-  str = str.replace(/[a-zA-Z]+/g, () => "")
-  str = str.replace(/[+-]/g, () => ((options.signDisplay = "exceptZero"), ""))
+  if (typeof str === "number") return num.toExponential(str === 0 ? 0 : str - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +`${n}e${e - Math.floor(e / 3) * 3}` + (["mµnpfazyrq", "kMGTPEZYRQ"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || ""))
+  str = str.replace(/[+]/g, () => ((options.signDisplay = "always"), "")) // exceptZero
   str = str.replace(/[%]/g, () => ((options.style = "percent"), ""))
-  if (str.length === 2) str = str + "#".repeat(15)
-  if (str.length === 0) str = ","
-  if (str.length === 1) str += "."
-  const [thousandSep, decimalSep] = [""].concat(str.match(/[^0#]/g)).slice(-2)
-  const [thousandPart, decimalPart] = str.split(decimalSep)
-  options.minimumIntegerDigits = (thousandPart.match(/0/g) || []).length || 1
-  options.minimumFractionDigits = (decimalPart.match(/0/g) || []).length
-  options.maximumFractionDigits = (decimalPart.match(/[0#]/g) || []).length
-  return new Intl.NumberFormat("en", options).format(num).replace(/[,.]/g, (m) => (m === "," ? thousandSep : decimalSep))
+  str = str.replace(/[e]\+?0?0?$/gi, () => ((options.notation = "scientific"), ""))
+  str = str.replace(RegExp(`(${Object.keys(CURRENCY).join("|").replace(/\$/g, "\\$")})`), (m) => ((options.style = "currency"), (options.currency = CURRENCY[m]), ""))
+  str = str.replace(/[a-z]{2,3}(-[a-z]{2,4})?(-[a-z0-9]{2,3})?/i, (m) => (Intl.NumberFormat.supportedLocalesOf(m).length ? ((options.locale = m), "") : m))
+  str = str.replace(/\s/g, "")
+  const separators = str.match(/[^0#]/g)
+  const [thousandPart, decimalPart = ""] = separators ? str.split(separators.at(-1)) : ["", str]
+  options.minimumIntegerDigits = thousandPart.match(/0/g)?.length
+  options.minimumFractionDigits = str === "." ? 0 : decimalPart.match(/0/g)?.length
+  options.maximumFractionDigits = str === "." ? 0 : decimalPart.match(/[0#]/g)?.length
+  return new Intl.NumberFormat(options.locale, options).format(num) // .replace(/[,.]/g, (m) => (m === "," ? separators[0] : separators.at(-1)))
 }
 // Date: unit, ms, letter, fn, zeros
 const DATE = [
@@ -240,8 +237,8 @@ const DATE = [
 DATE.forEach(([k, v]) => (DATE[k.toUpperCase()] = v))
 const DAY = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
 const MONTH = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
-const NUMBER = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 } // prettier-ignore
-const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi // prettier-ignore
+const NUMBER = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 }
+const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi
 function date_parse(from, str) {
   if (/now/i.test(str) && !/from\s+now/.test(str)) return from
   str = str.replace(/today/i, () => ((from = date_start(from, "day")), ""))
@@ -250,7 +247,7 @@ function date_parse(from, str) {
   str = str.replace(RegExp(`(${MONTH.join("|")})`, "i"), (m) => ((from = date_plus(date_start(from, "year"), { months: MONTH.indexOf(m.toLowerCase()) - (/last/.test(str) ? 12 : 0) })), ""))
   str = str.replace(RegExp(`(${DAY.join("|")})`, "i"), (m) => ((from = date_plus(date_start(from, "week"), { days: 1 + DAY.indexOf(m.toLowerCase()) - (/last/.test(str) ? 7 : 0) })), ""))
   str = str.replace(/(\d+)(st|nd|rd|th)/i, (_, num) => ((from = date_plus(date_start(from, "day"), { days: num - 1 })), ""))
-  str = str.replace(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i, (_, hours = 0, minutes = 0, seconds = 0, ampm) => (hours && minutes) || ampm ? ((from = date_plus(date_start(from, "day"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds })), "") : _) // prettier-ignore
+  str = str.replace(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i, (_, hours = 0, minutes = 0, seconds = 0, ampm) => ((hours && minutes) || ampm ? ((from = date_plus(date_start(from, "day"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds })), "") : _))
   return date_modify(from, str, /(last|ago)/.test(str) ? "-" : "+")
 }
 function date_relative(from, to = new Date()) {
@@ -334,7 +331,7 @@ function date_modify(date, options, sign) {
     },
   }[sign]
   units.forEach((unit) => options[`${unit[0]}s`] && fn(unit, options[`${unit[0]}s`]))
-  if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[`${k  }s`]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[`${k  }s`])) d.setDate(0) // prettier-ignore
+  if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[`${k}s`]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[`${k}s`])) d.setDate(0)
   if (["-", "+"].includes(sign) && date.getTimezoneOffset() !== d.getTimezoneOffset()) d.setTime(+d + (date.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000)
   return d
 }
@@ -588,5 +585,5 @@ function cut(...args) {
 }
 cut("mode", import.meta.url.split("?")[1] || "default")
 export default cut
-const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } = cut // prettier-ignore
-export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } // prettier-ignore
+const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } = cut
+export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace }
