@@ -208,9 +208,9 @@ const CURRENCY = Intl.supportedValuesOf("currency").reduce((acc, k) => ((acc[new
 function number_format(num, str = "", options = { locale: "en" }) {
   if (typeof num === "bigint") num = Number(num)
   if (typeof str === "number") return num.toExponential(str === 0 ? 0 : str - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +`${n}e${e - Math.floor(e / 3) * 3}` + (["mµnpfazyrq", "kMGTPEZYRQ"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || ""))
+  str = str.replace(/[e](\+?)(0*)$/gi, (m, p, z) => (((options.notation = "scientific"), (options.notationPlus = p), (options.notationZero = z?.length ?? 0)), ""))
   str = str.replace(/[+]/g, () => ((options.signDisplay = "always"), "")) // exceptZero
   str = str.replace(/[%]/g, () => ((options.style = "percent"), ""))
-  str = str.replace(/[e]\+?0?0?$/gi, () => ((options.notation = "scientific"), ""))
   str = str.replace(RegExp(`(${Object.keys(CURRENCY).join("|").replace(/\$/g, "\\$")})`), (m) => ((options.style = "currency"), (options.currency = CURRENCY[m]), ""))
   str = str.replace(/[a-z]{2,3}(-[a-z]{2,4})?(-[a-z0-9]{2,3})?/i, (m) => (Intl.NumberFormat.supportedLocalesOf(m).length ? ((options.locale = m), "") : m))
   str = str.replace(/\s/g, "")
@@ -219,7 +219,8 @@ function number_format(num, str = "", options = { locale: "en" }) {
   options.minimumIntegerDigits = thousandPart.match(/0/g)?.length
   options.minimumFractionDigits = str === "." ? 0 : decimalPart.match(/0/g)?.length
   options.maximumFractionDigits = str === "." ? 0 : decimalPart.match(/[0#]/g)?.length
-  return new Intl.NumberFormat(options.locale, options).format(num) // .replace(/[,.]/g, (m) => (m === "," ? separators[0] : separators.at(-1)))
+  return new Intl.NumberFormat(options.locale, options).format(num).replace(/E(-?)(\d)$/i, (m, s, n) => `E${s || options.notationPlus}${`0`.repeat(Math.max(0, options.notationZero - n.length))}${n}`)
+  // .replace(/[,.]/g, (m) => (m === "," ? separators[0] : separators.at(-1)))
 }
 // Date: unit, ms, letter, fn, zeros
 const DATE = [

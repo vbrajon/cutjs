@@ -260,6 +260,8 @@ export default [
   ["Number.format", 0.1, "fr +0.00%", "+10,00 %"],
   ["Number.format", 0.1, "fr-CA +.CNY", "+0 CN¥"],
   ["Number.format", 1010.101, "1,010.101"],
+  ["Number.format", 1010.101, ".E00", "1E03"],
+  ["Number.format", 1010.101, "+00E+00", "+1.01E+03"],
   ["Number.format", 1010.101, "$", "$1,010.10"],
   ["Number.format", 1010.101, "USD", "$1,010.10"],
   ["Number.format", 1010.101, "en", "1,010.101"],
