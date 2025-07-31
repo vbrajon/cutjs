@@ -435,7 +435,7 @@ function cut(...args) {
     cut[constructor.name] = cut[constructor.name] || {}
     cut[constructor.name][key] = fn
     cut[key] = (...args) => {
-      if (value?.toString()?.includes("[native code]")) return cut[constructor.name][key](...args)
+      if (value?.toString()?.includes("[native code]") || constructor.name === "Generic") return cut[constructor.name][key](...args)
       if (!cut[args[0]?.constructor.name]?.[key]) throw new Error(`${key} does not exist on ${args[0]?.constructor.name}`)
       return cut[args[0].constructor.name][key](...args)
     }
