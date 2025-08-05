@@ -5,41 +5,51 @@
   <div class="z-10 flex overflow-auto font-[450]">
     <a class="border border-transparent pt-2.5 pb-3 px-5" href="#">README</a>
   </div>
-  <div class="editor w-full h-full overflow-auto border-[20px] border-[#161b22] bg-[#161b22]">
+  <div class="editor w-full h-full overflow-auto border-[20px] border-[#0d1117] bg-[#0d1117]">
     <div class="grid font-mono text-sm">
       <pre class="[grid-column:1] [grid-row:1]"></pre>
-      <textarea
-        class="[grid-column:1] [grid-row:1] resize-none border-none bg-transparent text-transparent whitespace-pre caret-[orange] outline-0"
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-        spellcheck="false"
-      ></textarea>
+      <textarea class="[grid-column:1] [grid-row:1] resize-none border-none bg-transparent text-transparent whitespace-pre caret-[orange] outline-0" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
     </div>
   </div>
-</body>
+</body>ï
 <script type="module">
-  import { codeToHtml } from "https://esm.sh/shiki@1.0.0"
+  import { codeToHtml } from "https://esm.sh/shiki"
   import cut from "./cut.js?window+prototype"
   import tests from "./cut-core-test.js"
-  window.encode = (text) => { try { return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") } catch(e) { return "" } } // prettier-ignore
-  window.decode = (hash) => { try { return atob(hash.replace(/-/g, "+").replace(/_/g, "/")) } catch(e) { return "" } } // prettier-ignore
-  window.$ = (selector, root = document) => root.querySelector(selector)
-  window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
-  window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-  window.cache = {}
-  window.tests = tests
-  const README = await fetch("README.md").then((res) => res.text())
-  const EXEMPLE = /```js\n([\s\S]*?)```/.exec(README)[1]
-  const textarea = $(".editor textarea")
-  const maxSize = (textarea.clientWidth - 40) / 9
-  textarea.addEventListener("input", refresh)
-  addEventListener("hashchange", reload)
-  $(".z-10").innerHTML += Object.keys(cut.constructors)
-    .map((cname) => `<a class="border border-transparent pt-2.5 pb-3 px-5" href="#${cname}">${cname}</a>`)
-    .join("\n")
-  $(".z-10").innerHTML += `<div class="ml-auto pt-2.5 pb-3 px-5 font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
-  reload()
+  function generate(hash) {
+    if (!hash) return EXEMPLE
+    const imp = `import { ${Object.keys(cut[hash] || {}).join(", ")} } from "cut"`
+    const teststr = tests
+      .filter((t) => t[0] && t[0].split(".")[0] === hash)
+      .map((t, i) => `${t[0].split(".")[1]}(${t.slice(1, -1).map(stringify).join(", ")}) //= ${stringify(t.at(-1))}`)
+      .join("\n")
+    const testfn = tests
+      .filter((t) => t.name && t.name.split(".")[0] === hash)
+      .map((t, i) => `// ${t.name}\nconst test${i} = ${stringify(t.fn)}\nawait test${i}(cut) //= ${stringify(t.output)}`)
+      .join("\n")
+    return [imp, teststr, testfn].filter(Boolean).join("\n\n") + "\n"
+  }
+  function stringify(v) {
+    if (v === undefined) return "undefined"
+    if (v === null) return "null"
+    if (Object.is(v, -0)) return "-0"
+    if (typeof v === "string") return JSON.stringify(v)
+    if (typeof v === "number" || typeof v === "boolean") return String(v)
+    if (v instanceof Date) return +new Date(cut.format(v)) ? `new Date("${cut.format(v)}")` : `new Date(${+v})`
+    if (v instanceof RegExp) return v.toString()
+    for (const constructor of [Array, Boolean, Date, Error, Function, Number, Object, RegExp, String, Symbol]) {
+      if (v === constructor) return `${constructor.name}`
+    }
+    for (const constructor of [ArrayBuffer, Date, Error, Map, Set, WeakMap, WeakSet]) {
+      if (v instanceof constructor) return `new ${constructor.name}()`
+      if (v === constructor) return `${constructor.name}`
+    }
+    const trim = code => code.split("\n").map((l, i, a) => i ? l.slice(Math.min(...a.slice(1).filter(l => l.trim()).map(l => l.match(/^\s*/)[0].length))) : l).join("\n") // prettier-ignore
+    if (v instanceof Function) return trim(v.toString())
+    if (v instanceof Array) return `[${v.map(stringify).join(",")}]`
+    if (v instanceof Object) return `{${Object.entries(v).map(([k, v]) => `${JSON.stringify(k)}:${stringify(v)}`).join(",")}}` // prettier-ignore
+    return String(v)
+  }
   async function run(code) {
     code = code.replace(/^import /gm, "// import ") // ignore imports
     code = code.split(/^\/\/.*/m).at(-1) // take the section after the last comment
@@ -83,9 +93,9 @@
       errorInfo.com = errorInfo.line + " //! " + errorInfo.error.toString()
     }
     const code = (await info.map((v) => v.com || v.line).join("\n")) + "\n"
-    const html = await codeToHtml(code, { lang: "js", theme: "github-dark" })
+    const html = await codeToHtml(code, { lang: "js", theme: "github-dark-default" })
     $(".editor pre").outerHTML = html.replace(/style="[^"]*"/, `style="grid-column:1;grid-row:1;"`).replace(/tabindex="0"/, "")
-    $$(`.editor pre [style="color:#6A737D"]`).forEach((el) => {
+    $$(`.editor pre [style="color:#8B949E"]`).forEach((el) => {
       let color = "#789"
       if (el.textContent.includes("//=")) color = "orange"
       if (el.textContent.includes("//~")) color = "#f6e"
@@ -105,337 +115,366 @@
       if (el === link) el.style = `color:${colors[i]};border-color: ${colors[i]}1;border-bottom: 2px solid ${colors[i]};background: #FFFFFF10`
       else el.style = `color:${colors[i]}8;`
     })
-    const hash = location.hash.slice(1)
-    if (!hash) return refresh(EXEMPLE)
-    if (hash && !cut[hash]) return refresh(decode(hash))
-    const imp = `import { ${Object.keys(cut[hash] || {}).join(", ")} } from "cut"`
-    const teststr = tests
-      .filter((t) => t[0] && t[0].split(".")[0] === hash)
-      .map((t, i) => `${t[0].split(".")[1]}(${t.slice(1, -1).map(stringify).join(", ")}) //= ${stringify(t.at(-1))}`)
-      .join("\n")
-    const testfn = tests
-      .filter((t) => t.name && t.name.split(".")[0] === hash)
-      .map((t, i) => `// ${t.name}\nconst test${i} = ${stringify(t.fn)}\nawait test${i}(cut) //= ${stringify(t.output)}`)
-      .join("\n")
-    return refresh([imp, teststr, testfn].filter(Boolean).join("\n\n") + "\n")
+    return refresh(generate(location.hash.slice(1)))
   }
-  function stringify(v) {
-    if (v === undefined) return "undefined"
-    if (v === null) return "null"
-    if (Object.is(v, -0)) return "-0"
-    if (typeof v === "string") return JSON.stringify(v)
-    if (typeof v === "number" || typeof v === "boolean") return String(v)
-    if (v instanceof Date) return +new Date(v.format()) ? `new Date("${v.format()}")` : `new Date(${+v})`
-    if (v instanceof RegExp) return v.toString()
-    for (const constructor of [Array, Boolean, Date, Error, Function, Number, Object, RegExp, String, Symbol]) {
-      if (v === constructor) return `${constructor.name}`
-    }
-    for (const constructor of [ArrayBuffer, Date, Error, Map, Set, WeakMap, WeakSet]) {
-      if (v instanceof constructor) return `new ${constructor.name}()`
-      if (v === constructor) return `${constructor.name}`
-    }
-    const trim = code => code.split("\n").map((l, i, a) => i ? l.slice(Math.min(...a.slice(1).filter(l => l.trim()).map(l => l.match(/^\s*/)[0].length))) : l).join("\n") // prettier-ignore
-    if (v instanceof Function) return trim(v.toString())
-    if (v instanceof Array) return `[${v.map(stringify).join(",")}]`
-    if (v instanceof Object) return `{${Object.entries(v).map(([k, v]) => `${JSON.stringify(k)}:${stringify(v)}`).join(",")}}` // prettier-ignore
-    return String(v)
-  }
+  const README = await fetch("README.md").then((res) => res.text())
+  const EXEMPLE = /```js\n([\s\S]*?)```/.exec(README)[1]
+  window.encode = (text) => { try { return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") } catch(e) { return "" } } // prettier-ignore
+  window.decode = (hash) => { try { return atob(hash.replace(/-/g, "+").replace(/_/g, "/")) } catch(e) { return "" } } // prettier-ignore
+  window.$ = (selector, root = document) => root.querySelector(selector)
+  window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
+  window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  window.cache = {}
+  window.tests = tests
+  const textarea = $(".editor textarea")
+  const maxSize = (textarea.clientWidth - 40) / 9
+  textarea.addEventListener("input", refresh)
+  addEventListener("hashchange", reload)
+  $(".z-10").innerHTML += Object.keys(cut.constructors)
+    .map((cname) => `<a class="border border-transparent pt-2.5 pb-3 px-5" href="#${cname}">${cname}</a>`)
+    .join("\n")
+  $(".z-10").innerHTML += `<div class="ml-auto pt-2.5 pb-3 px-5 font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
+  reload()
 </script>
 <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
-<style>/*! tailwindcss v4.1.11 | MIT License | https://tailwindcss.com */
-@layer properties;
-@layer theme, base, components, utilities;
-@layer theme {
-  :root, :host {
-    --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji';
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
-    --color-black: #000;
-    --color-white: #fff;
-    --spacing: 0.25rem;
-    --text-sm: 0.875rem;
-    --text-sm--line-height: calc(1.25 / 0.875);
-    --default-font-family: var(--font-sans);
-    --default-mono-font-family: var(--font-mono);
+<style>
+  /*! tailwindcss v4.1.11 | MIT License | https://tailwindcss.com */
+  @layer properties;
+  @layer theme, base, components, utilities;
+  @layer theme {
+    :root,
+    :host {
+      --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --color-black: #000;
+      --color-white: #fff;
+      --spacing: 0.25rem;
+      --text-sm: 0.875rem;
+      --text-sm--line-height: calc(1.25 / 0.875);
+      --default-font-family: var(--font-sans);
+      --default-mono-font-family: var(--font-mono);
+    }
   }
-}
-@layer base {
-  *, ::after, ::before, ::backdrop, ::file-selector-button {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    border: 0 solid;
-  }
-  html, :host {
-    line-height: 1.5;
-    -webkit-text-size-adjust: 100%;
-    tab-size: 4;
-    font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji');
-    font-feature-settings: var(--default-font-feature-settings, normal);
-    font-variation-settings: var(--default-font-variation-settings, normal);
-    -webkit-tap-highlight-color: transparent;
-  }
-  hr {
-    height: 0;
-    color: inherit;
-    border-top-width: 1px;
-  }
-  abbr:where([title]) {
-    -webkit-text-decoration: underline dotted;
-    text-decoration: underline dotted;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    font-size: inherit;
-    font-weight: inherit;
-  }
-  a {
-    color: inherit;
-    -webkit-text-decoration: inherit;
-    text-decoration: inherit;
-  }
-  b, strong {
-    font-weight: bolder;
-  }
-  code, kbd, samp, pre {
-    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace);
-    font-feature-settings: var(--default-mono-font-feature-settings, normal);
-    font-variation-settings: var(--default-mono-font-variation-settings, normal);
-    font-size: 1em;
-  }
-  small {
-    font-size: 80%;
-  }
-  sub, sup {
-    font-size: 75%;
-    line-height: 0;
-    position: relative;
-    vertical-align: baseline;
-  }
-  sub {
-    bottom: -0.25em;
-  }
-  sup {
-    top: -0.5em;
-  }
-  table {
-    text-indent: 0;
-    border-color: inherit;
-    border-collapse: collapse;
-  }
-  :-moz-focusring {
-    outline: auto;
-  }
-  progress {
-    vertical-align: baseline;
-  }
-  summary {
-    display: list-item;
-  }
-  ol, ul, menu {
-    list-style: none;
-  }
-  img, svg, video, canvas, audio, iframe, embed, object {
-    display: block;
-    vertical-align: middle;
-  }
-  img, video {
-    max-width: 100%;
-    height: auto;
-  }
-  button, input, select, optgroup, textarea, ::file-selector-button {
-    font: inherit;
-    font-feature-settings: inherit;
-    font-variation-settings: inherit;
-    letter-spacing: inherit;
-    color: inherit;
-    border-radius: 0;
-    background-color: transparent;
-    opacity: 1;
-  }
-  :where(select:is([multiple], [size])) optgroup {
-    font-weight: bolder;
-  }
-  :where(select:is([multiple], [size])) optgroup option {
-    padding-inline-start: 20px;
-  }
-  ::file-selector-button {
-    margin-inline-end: 4px;
-  }
-  ::placeholder {
-    opacity: 1;
-  }
-  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
+  @layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border: 0 solid;
+    }
+    html,
+    :host {
+      line-height: 1.5;
+      -webkit-text-size-adjust: 100%;
+      tab-size: 4;
+      font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+      font-feature-settings: var(--default-font-feature-settings, normal);
+      font-variation-settings: var(--default-font-variation-settings, normal);
+      -webkit-tap-highlight-color: transparent;
+    }
+    hr {
+      height: 0;
+      color: inherit;
+      border-top-width: 1px;
+    }
+    abbr:where([title]) {
+      -webkit-text-decoration: underline dotted;
+      text-decoration: underline dotted;
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-size: inherit;
+      font-weight: inherit;
+    }
+    a {
+      color: inherit;
+      -webkit-text-decoration: inherit;
+      text-decoration: inherit;
+    }
+    b,
+    strong {
+      font-weight: bolder;
+    }
+    code,
+    kbd,
+    samp,
+    pre {
+      font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+      font-feature-settings: var(--default-mono-font-feature-settings, normal);
+      font-variation-settings: var(--default-mono-font-variation-settings, normal);
+      font-size: 1em;
+    }
+    small {
+      font-size: 80%;
+    }
+    sub,
+    sup {
+      font-size: 75%;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+    sub {
+      bottom: -0.25em;
+    }
+    sup {
+      top: -0.5em;
+    }
+    table {
+      text-indent: 0;
+      border-color: inherit;
+      border-collapse: collapse;
+    }
+    :-moz-focusring {
+      outline: auto;
+    }
+    progress {
+      vertical-align: baseline;
+    }
+    summary {
+      display: list-item;
+    }
+    ol,
+    ul,
+    menu {
+      list-style: none;
+    }
+    img,
+    svg,
+    video,
+    canvas,
+    audio,
+    iframe,
+    embed,
+    object {
+      display: block;
+      vertical-align: middle;
+    }
+    img,
+    video {
+      max-width: 100%;
+      height: auto;
+    }
+    button,
+    input,
+    select,
+    optgroup,
+    textarea,
+    ::file-selector-button {
+      font: inherit;
+      font-feature-settings: inherit;
+      font-variation-settings: inherit;
+      letter-spacing: inherit;
+      color: inherit;
+      border-radius: 0;
+      background-color: transparent;
+      opacity: 1;
+    }
+    :where(select:is([multiple], [size])) optgroup {
+      font-weight: bolder;
+    }
+    :where(select:is([multiple], [size])) optgroup option {
+      padding-inline-start: 20px;
+    }
+    ::file-selector-button {
+      margin-inline-end: 4px;
+    }
     ::placeholder {
-      color: currentcolor;
-      @supports (color: color-mix(in lab, red, red)) {
-        color: color-mix(in oklab, currentcolor 50%, transparent);
+      opacity: 1;
+    }
+    @supports (not (-webkit-appearance: -apple-pay-button)) or (contain-intrinsic-size: 1px) {
+      ::placeholder {
+        color: currentcolor;
+        @supports (color: color-mix(in lab, red, red)) {
+          color: color-mix(in oklab, currentcolor 50%, transparent);
+        }
+      }
+    }
+    textarea {
+      resize: vertical;
+    }
+    ::-webkit-search-decoration {
+      -webkit-appearance: none;
+    }
+    ::-webkit-date-and-time-value {
+      min-height: 1lh;
+      text-align: inherit;
+    }
+    ::-webkit-datetime-edit {
+      display: inline-flex;
+    }
+    ::-webkit-datetime-edit-fields-wrapper {
+      padding: 0;
+    }
+    ::-webkit-datetime-edit,
+    ::-webkit-datetime-edit-year-field,
+    ::-webkit-datetime-edit-month-field,
+    ::-webkit-datetime-edit-day-field,
+    ::-webkit-datetime-edit-hour-field,
+    ::-webkit-datetime-edit-minute-field,
+    ::-webkit-datetime-edit-second-field,
+    ::-webkit-datetime-edit-millisecond-field,
+    ::-webkit-datetime-edit-meridiem-field {
+      padding-block: 0;
+    }
+    :-moz-ui-invalid {
+      box-shadow: none;
+    }
+    button,
+    input:where([type="button"], [type="reset"], [type="submit"]),
+    ::file-selector-button {
+      appearance: button;
+    }
+    ::-webkit-inner-spin-button,
+    ::-webkit-outer-spin-button {
+      height: auto;
+    }
+    [hidden]:where(:not([hidden="until-found"])) {
+      display: none !important;
+    }
+  }
+  @layer utilities {
+    .z-10 {
+      z-index: 10;
+    }
+    .\[grid-column\:1\] {
+      grid-column: 1;
+    }
+    .\[grid-row\:1\] {
+      grid-row: 1;
+    }
+    .ml-auto {
+      margin-left: auto;
+    }
+    .flex {
+      display: flex;
+    }
+    .grid {
+      display: grid;
+    }
+    .h-full {
+      height: 100%;
+    }
+    .h-screen {
+      height: 100vh;
+    }
+    .w-full {
+      width: 100%;
+    }
+    .w-screen {
+      width: 100vw;
+    }
+    .resize-none {
+      resize: none;
+    }
+    .flex-col {
+      flex-direction: column;
+    }
+    .gap-2 {
+      gap: calc(var(--spacing) * 2);
+    }
+    .overflow-auto {
+      overflow: auto;
+    }
+    .overscroll-none {
+      overscroll-behavior: none;
+    }
+    .border {
+      border-style: var(--tw-border-style);
+      border-width: 1px;
+    }
+    .border-\[20px\] {
+      border-style: var(--tw-border-style);
+      border-width: 20px;
+    }
+    .border-none {
+      --tw-border-style: none;
+      border-style: none;
+    }
+    .border-\[\#0d1117\] {
+      border-color: #0d1117;
+    }
+    .border-transparent {
+      border-color: transparent;
+    }
+    .bg-\[\#0d1117\] {
+      background-color: #0d1117;
+    }
+    .bg-black {
+      background-color: var(--color-black);
+    }
+    .bg-transparent {
+      background-color: transparent;
+    }
+    .px-5 {
+      padding-inline: calc(var(--spacing) * 5);
+    }
+    .pt-2\.5 {
+      padding-top: calc(var(--spacing) * 2.5);
+    }
+    .pb-3 {
+      padding-bottom: calc(var(--spacing) * 3);
+    }
+    .font-mono {
+      font-family: var(--font-mono);
+    }
+    .text-sm {
+      font-size: var(--text-sm);
+      line-height: var(--tw-leading, var(--text-sm--line-height));
+    }
+    .font-\[450\] {
+      --tw-font-weight: 450;
+      font-weight: 450;
+    }
+    .whitespace-pre {
+      white-space: pre;
+    }
+    .text-transparent {
+      color: transparent;
+    }
+    .text-white {
+      color: var(--color-white);
+    }
+    .caret-\[orange\] {
+      caret-color: orange;
+    }
+    .outline-0 {
+      outline-style: var(--tw-outline-style);
+      outline-width: 0px;
+    }
+  }
+  @property --tw-border-style {
+    syntax: "*";
+    inherits: false;
+    initial-value: solid;
+  }
+  @property --tw-font-weight {
+    syntax: "*";
+    inherits: false;
+  }
+  @property --tw-outline-style {
+    syntax: "*";
+    inherits: false;
+    initial-value: solid;
+  }
+  @layer properties {
+    @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
+      *,
+      ::before,
+      ::after,
+      ::backdrop {
+        --tw-border-style: solid;
+        --tw-font-weight: initial;
+        --tw-outline-style: solid;
       }
     }
   }
-  textarea {
-    resize: vertical;
-  }
-  ::-webkit-search-decoration {
-    -webkit-appearance: none;
-  }
-  ::-webkit-date-and-time-value {
-    min-height: 1lh;
-    text-align: inherit;
-  }
-  ::-webkit-datetime-edit {
-    display: inline-flex;
-  }
-  ::-webkit-datetime-edit-fields-wrapper {
-    padding: 0;
-  }
-  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
-    padding-block: 0;
-  }
-  :-moz-ui-invalid {
-    box-shadow: none;
-  }
-  button, input:where([type='button'], [type='reset'], [type='submit']), ::file-selector-button {
-    appearance: button;
-  }
-  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
-    height: auto;
-  }
-  [hidden]:where(:not([hidden='until-found'])) {
-    display: none !important;
-  }
-}
-@layer utilities {
-  .z-10 {
-    z-index: 10;
-  }
-  .\[grid-column\:1\] {
-    grid-column: 1;
-  }
-  .\[grid-row\:1\] {
-    grid-row: 1;
-  }
-  .ml-auto {
-    margin-left: auto;
-  }
-  .flex {
-    display: flex;
-  }
-  .grid {
-    display: grid;
-  }
-  .h-full {
-    height: 100%;
-  }
-  .h-screen {
-    height: 100vh;
-  }
-  .w-full {
-    width: 100%;
-  }
-  .w-screen {
-    width: 100vw;
-  }
-  .resize-none {
-    resize: none;
-  }
-  .flex-col {
-    flex-direction: column;
-  }
-  .gap-2 {
-    gap: calc(var(--spacing) * 2);
-  }
-  .overflow-auto {
-    overflow: auto;
-  }
-  .overscroll-none {
-    overscroll-behavior: none;
-  }
-  .border {
-    border-style: var(--tw-border-style);
-    border-width: 1px;
-  }
-  .border-\[20px\] {
-    border-style: var(--tw-border-style);
-    border-width: 20px;
-  }
-  .border-none {
-    --tw-border-style: none;
-    border-style: none;
-  }
-  .border-\[\#161b22\] {
-    border-color: #161b22;
-  }
-  .border-transparent {
-    border-color: transparent;
-  }
-  .bg-\[\#161b22\] {
-    background-color: #161b22;
-  }
-  .bg-black {
-    background-color: var(--color-black);
-  }
-  .bg-transparent {
-    background-color: transparent;
-  }
-  .px-5 {
-    padding-inline: calc(var(--spacing) * 5);
-  }
-  .pt-2\.5 {
-    padding-top: calc(var(--spacing) * 2.5);
-  }
-  .pb-3 {
-    padding-bottom: calc(var(--spacing) * 3);
-  }
-  .font-mono {
-    font-family: var(--font-mono);
-  }
-  .text-sm {
-    font-size: var(--text-sm);
-    line-height: var(--tw-leading, var(--text-sm--line-height));
-  }
-  .font-\[450\] {
-    --tw-font-weight: 450;
-    font-weight: 450;
-  }
-  .whitespace-pre {
-    white-space: pre;
-  }
-  .text-transparent {
-    color: transparent;
-  }
-  .text-white {
-    color: var(--color-white);
-  }
-  .caret-\[orange\] {
-    caret-color: orange;
-  }
-  .outline-0 {
-    outline-style: var(--tw-outline-style);
-    outline-width: 0px;
-  }
-}
-@property --tw-border-style {
-  syntax: "*";
-  inherits: false;
-  initial-value: solid;
-}
-@property --tw-font-weight {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-outline-style {
-  syntax: "*";
-  inherits: false;
-  initial-value: solid;
-}
-@layer properties {
-  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
-    *, ::before, ::after, ::backdrop {
-      --tw-border-style: solid;
-      --tw-font-weight: initial;
-      --tw-outline-style: solid;
-    }
-  }
-}
 </style>
