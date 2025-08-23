@@ -11,7 +11,13 @@
       <textarea class="[grid-column:1] [grid-row:1] resize-none border-none bg-transparent text-transparent whitespace-pre caret-[orange] outline-0" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
     </div>
   </div>
-</body>ï
+</body>
+<!-- <script type="module">
+  import { format } from "https://esm.sh/prettier/standalone"
+  import babelPlugin from "https://esm.sh/prettier/plugins/babel"
+  import estreePlugin from "https://esm.sh/prettier/plugins/estree"
+  window.prettier = (text) => format(text, { parser: "babel", plugins: [babelPlugin, estreePlugin], printWidth: 200, semi: false })
+</script> -->
 <script type="module">
   import { codeToHtml } from "https://esm.sh/shiki"
   import cut from "./cut.js?window+prototype"
@@ -115,7 +121,9 @@
       if (el === link) el.style = `color:${colors[i]};border-color: ${colors[i]}1;border-bottom: 2px solid ${colors[i]};background: #FFFFFF10`
       else el.style = `color:${colors[i]}8;`
     })
-    return refresh(generate(location.hash.slice(1)))
+    const hash = location.hash.slice(1)
+    if (hash && !cut[hash]) return refresh(decode(hash))
+    return refresh(generate(hash))
   }
   const README = await fetch("README.md").then((res) => res.text())
   const EXEMPLE = /```js\n([\s\S]*?)```/.exec(README)[1]
@@ -126,14 +134,15 @@
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   window.cache = {}
   window.tests = tests
-  const textarea = $(".editor textarea")
-  const maxSize = (textarea.clientWidth - 40) / 9
-  textarea.addEventListener("input", refresh)
-  addEventListener("hashchange", reload)
   $(".z-10").innerHTML += Object.keys(cut.constructors)
     .map((cname) => `<a class="border border-transparent pt-2.5 pb-3 px-5" href="#${cname}">${cname}</a>`)
     .join("\n")
   $(".z-10").innerHTML += `<div class="ml-auto pt-2.5 pb-3 px-5 font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
+  const textarea = $(".editor textarea")
+  const maxSize = (textarea.clientWidth - 40) / 9
+  textarea.addEventListener("input", refresh)
+  addEventListener("hashchange", reload)
+  // addEventListener("keydown", async (e) => (e.ctrlKey || e.metaKey) && (e.key === "Enter" || e.key === "S") && (e.preventDefault(), refresh(await prettier(textarea.value))))
   reload()
 </script>
 <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->

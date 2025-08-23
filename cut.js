@@ -1,11 +1,10 @@
 // Generic
-function type(a) {
-  if (Number.isNaN(a)) return "NaN"
-  if (!a || !a.constructor) return Object.prototype.toString.call(a).slice(8, -1)
-  return a.constructor.name
-}
 function is(a, b) {
-  if (arguments.length === 1) return type(a)
+  if (arguments.length === 1) {
+    if (Number.isNaN(a)) return "NaN"
+    if (!a || !a.constructor) return Object.prototype.toString.call(a).slice(8, -1)
+    return a.constructor.name
+  }
   if (!b) return a === b || isNaN(a) === isNaN(b)
   return a?.constructor === b || b?.constructor === a
 }
@@ -162,15 +161,6 @@ function function_throttle(fn, ms = 0) {
   }
 }
 // String
-function string_lower(str) {
-  return str.toLowerCase()
-}
-function string_upper(str) {
-  return str.toUpperCase()
-}
-function string_capitalize(str) {
-  return str.toLowerCase().replace(/./, (c) => c.toUpperCase())
-}
 function string_words(str) {
   return str
     .replace(/[^\p{L}\d]/gu, " ")
@@ -182,6 +172,9 @@ function string_words(str) {
 }
 function string_format(str, ...args) {
   if (!args.length) args[0] = "title"
+  if (["lower", "lowercase"].includes(args[0])) return str.toLowerCase()
+  if (["upper", "uppercase"].includes(args[0])) return str.toUpperCase()
+  if (["cap", "capitalize"].includes(args[0])) return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
   if (["-", "dash"].includes(args[0])) args[0] = "kebab"
   if (["_", "underscore"].includes(args[0])) args[0] = "snake"
   if (["title", "pascal", "camel", "kebab", "snake"].includes(args[0])) {
@@ -440,6 +433,7 @@ function cut(...args) {
       return cut[args[0].constructor.name][key](...args)
     }
     if (cut.mode?.includes("window")) {
+      if (!globalThis.window) globalThis.window = globalThis
       window.cut = cut
       window[key] = cut[key]
     }
@@ -556,9 +550,6 @@ function cut(...args) {
     cut(Function, "wait", function_wait)
     cut(Function, "debounce", function_debounce)
     cut(Function, "throttle", function_throttle)
-    cut(String, "lower", string_lower)
-    cut(String, "upper", string_upper)
-    cut(String, "capitalize", string_capitalize)
     cut(String, "words", string_words)
     cut(String, "format", string_format)
     cut(Number, "duration", number_duration)
@@ -587,5 +578,5 @@ function cut(...args) {
 }
 cut("mode", import.meta.url.split("?")[1] || "default")
 export default cut
-const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } = cut
-export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, lower, upper, capitalize, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace }
+const { keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace } = cut
+export { is, equal, access, transform, keys, values, entries, fromEntries, map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median, decorate, promisify, partial, memoize, every, wait, debounce, throttle, words, format, duration, relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, modify, plus, minus, start, end, escape, replace }

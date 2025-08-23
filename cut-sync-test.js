@@ -215,10 +215,10 @@ export default [
     },
     output: 1,
   },
-  ["String.lower", "A.B", "a.b"],
-  ["String.upper", "a.b", "A.B"],
-  ["String.capitalize", "A.B", "A.b"],
   ["String.words", "Title Case kebab-case snake_case camelCase PascalCase 12NUM34ber56 lowerUPPERlower", ["Title", "Case", "kebab", "case", "snake", "case", "camel", "Case", "Pascal", "Case", "12", "NUM", "34", "ber", "56", "lower", "UPPERlower"]],
+  ["String.format", "A.B", "lower", "a.b"],
+  ["String.format", "a.b", "upper", "A.B"],
+  ["String.format", "A.B", "capitalize", "A.b"],
   ["String.format", "Title Case kebab-case snake_case camelCase PascalCase 12NUM34ber56 lowerUPPERlower", "-", "title-case-kebab-case-snake-case-camel-case-pascal-case-12-num-34-ber-56-lower-upperlower"],
   ["String.format", str, "I Am The 1 And Only"], // "title" by default
   ["String.format", str, "-", "i-am-the-1-and-only"], // "dash"

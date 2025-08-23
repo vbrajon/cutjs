@@ -84,21 +84,16 @@ invalid.transpose() //! Error: Not a matrix
 
 ## Functions
 
-| Generic   | Object        | Array       | Function  | String     | Number   | Date        | RegExp |
-| --------- | ------------- | ----------- | --------- | ---------- | -------- | ----------- | ------ |
-| is        | _keys_        | _map_       | decorate  | lower      | duration | relative    | escape |
-| equal     | _values_      | _reduce_    | promisify | upper      | format   | getWeek     | plus   |
-| access    | _entries_     | _filter_    | partial   | capitalize |          | getQuarter  | minus  |
-| transform | _fromEntries_ | _find_      | memoize   | words      |          | getLastDate |        |
-|           | map           | _findIndex_ | every     | format     |          | getTimezone |        |
-|           | reduce        | _sort_      | wait      |            |          | format      |        |
-|           | filter        | group       | debounce  |            |          | modify      |        |
-|           | find          | unique      | throttle  |            |          | parse       |        |
-|           | findIndex     | min         |           |            |          | plus        |        |
-|           |               | max         |           |            |          | minus       |        |
-|           |               | sum         |           |            |          | start       |        |
-|           |               | mean        |           |            |          | end         |        |
-|           |               | median      |           |            |          |             |        |
+<!-- Object.keys(cut.constructors).map(c => `- ${c}: ${Object.keys(cut[c]).map(k => k).join(", ")}`).join("\n") -->
+
+- Generic: is, equal, access, transform
+- Object: keys, values, entries, fromEntries, map, reduce, filter, find, findIndex
+- Array: map, reduce, filter, find, findIndex, sort, group, unique, min, max, sum, mean, median
+- Function: decorate, promisify, partial, memoize, every, wait, debounce, throttle
+- String: words, format
+- Number: duration, format
+- Date: relative, getWeek, getQuarter, getLastDate, getTimezone, setTimezone, parse, format, modify, plus, minus, start, end
+- RegExp: escape, replace, plus, minus
 
 ## Development
 
@@ -107,17 +102,48 @@ bun i @js-temporal/polyfill lodash-es
 bun test --watch --coverage
 ```
 
+## Principles
+
+1. **Shortcuts**: Easy extension for input or error handling through decorators.
+   ```js
+   // The "sort" function has a shortcut to handle different input types and convert them to the proper input
+   const users = await fetch("https://jsonplaceholder.typicode.com/users")
+   sort(users, "name") // accepts a string to sort by the property
+   sort(users, "-address.city") // accepts a string with "-" to sort in descending order and "." to access nested properties
+   sort(users, (v) => v.name) // accepts a function of length 1
+   sort(users, ["-address.city", (v) => v.name]) // accepts an array for multi-sorting
+   ```
+2. **Simplicity**: Few core functions, easy to use and understand.
+   ```js
+   // Object: map, reduce, filter, find (and other equivalent Array functions)
+   // Array: sort, group, unique, min, max, sum, mean, median
+   // String: format
+   // Number: format
+   // Date: format, parse, plus, minus, start, end
+   ```
+3. **Combination**: Functions with the same name are combined into a single function that handles multiple types.
+   ```js
+   // The "format" function is defined for String, Number, and Date
+   format("hello world", "capitalize") //= "Hello world"
+   format(123456.789, "$") //= "$123,456.79"
+   format(new Date("2000"), "YYYY") //= "2000"
+   ```
+4. **Powerful**: Few core functions that cover most use cases, removing the need for additional libraries like Lodash, Date-fns, or numfmt.
+
 ## Roadmap
 
-- [x] Interactive Docs & Tests: https://raw.githack.com/vbrajon/rawjs/cut/index.html
-- [x] Replace cutest by bun test
-- [ ] Iterator or AsyncIterator
-- [ ] Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
-- [ ] Fuzzy tests
-- [ ] Typescript / TSDoc
-- [ ] Monaco Editor
-- [ ] Collaboration / Multiplayer / CTRL-S to PR
 - [ ] Blog Post / Hacker News / Product Hunt
+- [ ] CODE: Iterator or AsyncIterator
+- [ ] CODE: Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
+- [ ] CODE: Typescript / TSDoc
+- [ ] DOC: per function, from Markdown or TSDoc, like motion.dev or sugarjs.com
+- [ ] DOC: button for Source Code + size / Gzip size
+- [ ] DOC: Monaco Editor or Github.dev like
+- [ ] DOC: Collaboration / Multiplayer / CTRL-S to PR
+- [ ] EXPERIMENT: LSP for test runner
+- [ ] EXPERIMENT: Fuzzy tests
+- [ ] EXPERIMENT: Security tests
+- [ ] EXPERIMENT: Composition / Distribution with AI as a Shadcn or v0 registry
 
 ---
 
