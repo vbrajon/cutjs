@@ -1,4 +1,4 @@
-<title>CutJS</title>
+<title>Cut.js</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='100'>✂️</text></svg>" />
 <body class="flex h-screen w-screen flex-col overscroll-none bg-black text-white">
@@ -89,7 +89,7 @@
   }
   async function refresh(text) {
     if (typeof text === "string") textarea.value = text
-    if (text instanceof Event && !cut[location.hash.slice(1)]) location.hash = encode(textarea.value)
+    if (text instanceof Event && !cut[location.hash.slice(1)]) location.hash = await compress(textarea.value)
     const info = await Promise.all(textarea.value.split("\n").map(comment))
     const error = info.findLast((v) => v.hasOwnProperty("error"))
     $(".editor").style = "outline: 1px solid rgb(255 255 255 / 5%);outline-offset: -1px;"
@@ -113,7 +113,7 @@
     $('span[style="color:#7d0"]').textContent = code.split("//✓").length - 1
     $('span[style="color:#f34"]').textContent = code.split("//✗").length - 1 + code.split("//!").length - 1 || ""
   }
-  function reload() {
+  async function reload() {
     const colors = ["#fff", "#abc", "#fd0", "#f34", "#39f", "#fa3", "#7d0", "#f6e", "#3df"]
     const links = $$(".links a")
     const link = links.find((el) => el.getAttribute("href") === location.hash) || links[0]
@@ -122,13 +122,32 @@
       else el.style = `color:${colors[i]}8;`
     })
     const hash = location.hash.slice(1)
-    if (hash && !cut[hash]) return refresh(decode(hash))
+    document.title = `Cut.js - ${!hash ? "README" : cut[hash] ? hash : "Play"}`
+    if (hash && !cut[hash]) return refresh(await decompress(hash))
     return refresh(generate(hash))
+  }
+  async function compress(text) {
+    try {
+      const stream = new Response(text).body.pipeThrough(new CompressionStream("deflate-raw"))
+      const buffer = await new Response(stream).arrayBuffer()
+      const binary = String.fromCharCode(...new Uint8Array(buffer))
+      return btoa(binary)
+    } catch (e) {
+      return ""
+    }
+  }
+  async function decompress(base64) {
+    try {
+      const binary = atob(base64)
+      const buffer = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+      const stream = new Response(buffer).body.pipeThrough(new DecompressionStream("deflate-raw"))
+      return await new Response(stream).text()
+    } catch (e) {
+      return ""
+    }
   }
   const README = await fetch("README.md").then((res) => res.text())
   const EXEMPLE = /```js\n([\s\S]*?)```/.exec(README)[1]
-  window.encode = (text) => { try { return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") } catch(e) { return "" } } // prettier-ignore
-  window.decode = (hash) => { try { return atob(hash.replace(/-/g, "+").replace(/_/g, "/")) } catch(e) { return "" } } // prettier-ignore
   window.$ = (selector, root = document) => root.querySelector(selector)
   window.$$ = (selector, root = document) => [...root.querySelectorAll(selector)]
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
