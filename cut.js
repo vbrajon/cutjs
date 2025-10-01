@@ -305,7 +305,7 @@ function date_modify(date, options, sign) {
   options = Object.fromEntries(
     Object.entries(options)
       .filter(([k, v]) => ["milliseconds", "seconds", "minutes", "hours", "days", "months", "years"].includes(k))
-      .map(([k, v]) => [k, Math.round(+v)])
+      .map(([k, v]) => [k, Math.round(+v)]),
   )
   const d = new Date(date)
   const units = DATE.filter((unit) => ["millisecond", "second", "minute", "hour", "day", "month", "year"].includes(unit[0]))

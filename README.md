@@ -1,30 +1,40 @@
 <p align="center">
-  <a href="https://raw.githack.com/vbrajon/rawjs/cut/index.html" target="_blank">
+  <a href="https://cutjs.com" target="_blank">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vbrajon/rawjs/cut/logo-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/vbrajon/rawjs/cut/logo-light.svg">
-      <img alt="Cut JS" src="https://raw.githubusercontent.com/vbrajon/rawjs/cut/logo-light.svg" width="350" height="70" style="max-width: 100%;">
+      <source media="(prefers-color-scheme: dark)" srcset="https://cutjs.com/logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://cutjs.com/logo-light.svg">
+      <img alt="Cut JS Logo" src="https://cutjs.com/logo-light.svg" width="350" height="70" style="max-width: 100%;">
     </picture>
   </a>
 </p>
 
 <p align="center">
-  A shortcut utility JS library for rapidly interacting with objects, dates, and functions.
+  JS utilities, extensible, dependency-free, to format and manipulate anything.
 </p>
 
 <!-- prettier-ignore -->
 ```js
+/**
+
+Cut JS - https://cutjs.com
+
+JS utilities, extensible, dependency-free, to format and manipulate anything.
+
+Play with it here or in the TS Playground https://tsplay.dev/cutjs
+
+*/
+
 // Normal use
-import { map } from "cut"
+import { map } from "cutjs"
 map({ a: 1 }, (v) => v + 1) //= {"a":2}
 
 // Proxy use, access .data or .error
-import cut from "cut"
+import cut from "cutjs"
 cut({ a: 1 }).map((v) => v + 1).data //= {"a":2}
 cut({ a: 1 }).x.y.error //= new Error()
 
 // Prototype use, call directly on the object
-import "cut?window+prototype"
+import "cutjs?window+prototype"
 ({ a: 1 }).map((v) => v + 1) //= {"a":2}
 
 // Format a Date
@@ -44,7 +54,8 @@ new Date("2000T00:00").format("long, short", "ja") //= "2000年1月1日 0:00"
 123456.789.format(".") //= "123,457"
 123456.789.format("CN¥") //= "CN¥123,456.79"
 
-// Parse a Date
+// Parse a Date Expression
+new Date().parse("2000-Q2-02") //= new Date("2000-04-02T00:00:00+01:00")
 new Date("2000T00:00").parse("tomorrow") //= new Date("2000-01-02T00:00:00+01:00")
 new Date("2000T00:00").parse("yesterday at 3pm") //= new Date("1999-12-31T15:00:00+01:00")
 new Date("2000T00:00").parse("in one hour, two minutes and thirty-four seconds") //= new Date("2000-01-01T01:02:34+01:00")
@@ -52,7 +63,7 @@ new Date("2000T00:00").parse("6:30pm in three days") //= new Date("2000-01-04T18
 
 // Manipulate a Date
 new Date("2000").plus("1 month").end("month").format("YYYY-MM-DD hh:mm") //= "2000-02-29 23:59"
-new Date("2000").minus({ years: 1, months: 2 }).plus("1 year, 2 months").toISOString().slice(0, 10) //= "2000-01-01"
+new Date("2000").minus({ years: 1, months: 2 }).plus("1 year, 2 months").format("YYYY-MM-DD hh:mm") //= "2000-01-01 00:00"
 
 // Manipulate an Object or Array
 const users = [
@@ -62,6 +73,15 @@ const users = [
 ]
 const usersByCity = users.sort("-age").group("city") //~ {"Paris":[{"name":"Jean","age":35...}
 const avgAgeByCity = usersByCity.map((g) => g.mean("age")) //~ {"Paris":35...}
+
+// Manipulate a Function
+const event = onEvent.throttle(1000).debounce(500)
+const cache = expensiveFn.memoize()
+const _fetch = fetch.decorate((fn, url, options) => {
+  const timeout = options?.timeout || 5000
+  const timer = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeout))
+  return Promise.race([fn(url, options), timer])
+})
 
 // Add a Function
 cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
@@ -98,7 +118,7 @@ invalid.transpose() //! Error: Not a matrix
 ## Development
 
 ```bash
-bun i @js-temporal/polyfill lodash-es
+bun install --no-save @js-temporal/polyfill lodash-es
 bun test --watch --coverage
 ```
 
@@ -133,23 +153,31 @@ bun test --watch --coverage
 ## Roadmap
 
 - [ ] Blog Post / Hacker News / Product Hunt
-- [ ] CODE: Iterator or AsyncIterator
 - [ ] CODE: Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
-- [ ] CODE: Typescript / TSDoc
+- [ ] CODE: Typescript / TSDoc or JSDoc
 - [ ] DOC: per function, from Markdown or TSDoc, like motion.dev or sugarjs.com
 - [ ] DOC: button for Source Code + size / Gzip size
+- [ ] DOC: AI Copilot
 - [ ] DOC: Monaco Editor or Github.dev like
 - [ ] DOC: Collaboration / Multiplayer / CTRL-S to PR
+- [ ] EXPERIMENT: Iterator or AsyncIterator
 - [ ] EXPERIMENT: LSP for test runner
 - [ ] EXPERIMENT: Fuzzy tests
 - [ ] EXPERIMENT: Security tests
-- [ ] EXPERIMENT: Composition / Distribution with AI as a Shadcn or v0 registry
+- [ ] EXPERIMENT: Registry / Composition / Distribution with AI as a Shadcn or v0 registry
 
----
+## Inspiration
 
-- [lodash](https://lodash.com/) or [underscore](https://underscorejs.org/) or [just](https://anguscroll.com/just/) or [sugar](https://sugarjs.com/)
-- [date-fns](https://date-fns.org/) or [moment](https://momentjs.com/) or [dayjs](https://day.js.org/) or [tempo](https://tempo.formkit.com/)
-- [ixjs](https://github.com/ReactiveX/IxJS) or [rxjs](https://rxjs.dev/)
+- utils [lodash](https://lodash.com/)
+- utils [underscore](https://underscorejs.org/)
+- utils [just](https://anguscroll.com/just/)
+- utils [sugar](https://sugarjs.com/)
+- date [date-fns](https://date-fns.org/)
+- date [moment](https://momentjs.com/)
+- date [dayjs](https://day.js.org/)
+- date [tempo](https://tempo.formkit.com/)
+- [ixjs](https://github.com/ReactiveX/IxJS)
+- [rxjs](https://rxjs.dev/)
 - [mathjs](https://mathjs.org/)
 - [xstate](https://xstate.js.org/)
 - [motion](https://motion.dev/)

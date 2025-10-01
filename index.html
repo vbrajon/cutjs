@@ -1,14 +1,14 @@
 <title>CutJS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='100'>✂️</text></svg>" />
-<body class="flex flex-col h-screen w-screen bg-black text-white overscroll-none">
-  <div class="z-10 flex overflow-auto font-[450]">
-    <a class="border border-transparent pt-2.5 pb-3 px-5" href="#">README</a>
+<body class="flex h-screen w-screen flex-col overscroll-none bg-black text-white">
+  <div class="links z-10 flex overflow-auto font-[450] *:border *:border-2 *:border-transparent *:p-3 *:pt-2">
+    <a class="!p-0" href="#"><img class="m-1 w-16" alt="Cut JS Logo" src="https://cutjs.com/logo-dark.svg" /></a>
   </div>
-  <div class="editor w-full h-full overflow-auto border-[20px] border-[#0d1117] bg-[#0d1117]">
+  <div class="editor h-full w-full overflow-auto border-[20px] border-[#0d1117] bg-[#0d1117]">
     <div class="grid font-mono text-sm">
       <pre class="[grid-column:1] [grid-row:1]"></pre>
-      <textarea class="[grid-column:1] [grid-row:1] resize-none border-none bg-transparent text-transparent whitespace-pre caret-[orange] outline-0" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      <textarea class="[grid-column:1] [grid-row:1] resize-none border-none bg-transparent whitespace-pre text-transparent caret-[orange] outline-0" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
     </div>
   </div>
 </body>
@@ -24,7 +24,7 @@
   import tests from "./cut-core-test.js"
   function generate(hash) {
     if (!hash) return EXEMPLE
-    const imp = `import { ${Object.keys(cut[hash] || {}).join(", ")} } from "cut"`
+    const imp = `import { ${Object.keys(cut[hash] || {}).join(", ")} } from "cutjs"`
     const teststr = tests
       .filter((t) => t[0] && t[0].split(".")[0] === hash)
       .map((t, i) => `${t[0].split(".")[1]}(${t.slice(1, -1).map(stringify).join(", ")}) //= ${stringify(t.at(-1))}`)
@@ -115,10 +115,10 @@
   }
   function reload() {
     const colors = ["#fff", "#abc", "#fd0", "#f34", "#39f", "#fa3", "#7d0", "#f6e", "#3df"]
-    const links = $$("a[href]")
+    const links = $$(".links a")
     const link = links.find((el) => el.getAttribute("href") === location.hash) || links[0]
     links.forEach((el, i) => {
-      if (el === link) el.style = `color:${colors[i]};border-color: ${colors[i]}1;border-bottom: 2px solid ${colors[i]};background: #FFFFFF10`
+      if (el === link) el.style = `color:${colors[i]};border-bottom-color: ${colors[i]};background: #FFFFFF10`
       else el.style = `color:${colors[i]}8;`
     })
     const hash = location.hash.slice(1)
@@ -134,10 +134,10 @@
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   window.cache = {}
   window.tests = tests
-  $(".z-10").innerHTML += Object.keys(cut.constructors)
-    .map((cname) => `<a class="border border-transparent pt-2.5 pb-3 px-5" href="#${cname}">${cname}</a>`)
+  $(".links").innerHTML += Object.keys(cut.constructors)
+    .map((cname) => `<a href="#${cname}">${cname}</a>`)
     .join("\n")
-  $(".z-10").innerHTML += `<div class="ml-auto pt-2.5 pb-3 px-5 font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
+  $(".links").innerHTML += `<div class="ml-auto font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
   const textarea = $(".editor textarea")
   const maxSize = (textarea.clientWidth - 40) / 9
   textarea.addEventListener("input", refresh)
@@ -147,7 +147,7 @@
 </script>
 <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
 <style>
-  /*! tailwindcss v4.1.11 | MIT License | https://tailwindcss.com */
+  /*! tailwindcss v4.1.13 | MIT License | https://tailwindcss.com */
   @layer properties;
   @layer theme, base, components, utilities;
   @layer theme {
@@ -334,6 +334,9 @@
     ::-webkit-datetime-edit-meridiem-field {
       padding-block: 0;
     }
+    ::-webkit-calendar-picker-indicator {
+      line-height: 1;
+    }
     :-moz-ui-invalid {
       box-shadow: none;
     }
@@ -360,6 +363,9 @@
     .\[grid-row\:1\] {
       grid-row: 1;
     }
+    .m-1 {
+      margin: calc(var(--spacing) * 1);
+    }
     .ml-auto {
       margin-left: auto;
     }
@@ -374,6 +380,9 @@
     }
     .h-screen {
       height: 100vh;
+    }
+    .w-16 {
+      width: calc(var(--spacing) * 16);
     }
     .w-full {
       width: 100%;
@@ -396,10 +405,6 @@
     .overscroll-none {
       overscroll-behavior: none;
     }
-    .border {
-      border-style: var(--tw-border-style);
-      border-width: 1px;
-    }
     .border-\[20px\] {
       border-style: var(--tw-border-style);
       border-width: 20px;
@@ -411,9 +416,6 @@
     .border-\[\#0d1117\] {
       border-color: #0d1117;
     }
-    .border-transparent {
-      border-color: transparent;
-    }
     .bg-\[\#0d1117\] {
       background-color: #0d1117;
     }
@@ -423,14 +425,8 @@
     .bg-transparent {
       background-color: transparent;
     }
-    .px-5 {
-      padding-inline: calc(var(--spacing) * 5);
-    }
-    .pt-2\.5 {
-      padding-top: calc(var(--spacing) * 2.5);
-    }
-    .pb-3 {
-      padding-bottom: calc(var(--spacing) * 3);
+    .\!p-0 {
+      padding: calc(var(--spacing) * 0) !important;
     }
     .font-mono {
       font-family: var(--font-mono);
@@ -458,6 +454,33 @@
     .outline-0 {
       outline-style: var(--tw-outline-style);
       outline-width: 0px;
+    }
+    .\*\:border {
+      :is(& > *) {
+        border-style: var(--tw-border-style);
+        border-width: 1px;
+      }
+    }
+    .\*\:border-2 {
+      :is(& > *) {
+        border-style: var(--tw-border-style);
+        border-width: 2px;
+      }
+    }
+    .\*\:border-transparent {
+      :is(& > *) {
+        border-color: transparent;
+      }
+    }
+    .\*\:p-3 {
+      :is(& > *) {
+        padding: calc(var(--spacing) * 3);
+      }
+    }
+    .\*\:pt-2 {
+      :is(& > *) {
+        padding-top: calc(var(--spacing) * 2);
+      }
     }
   }
   @property --tw-border-style {

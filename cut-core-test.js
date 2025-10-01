@@ -167,7 +167,7 @@ export default [
       if (cut.mode !== "window+prototype") throw new Error("cut.mode is not window+prototype")
       cut("shortcut", "fake", (x) => Math.round(x * 100))
       cut(Number, "fake", 1 / 3)
-      if (0.1.fake() !== 33) throw new Error("Number.fake result is not 33 " + 0.1.fake())
+      if ((0.1).fake() !== 33) throw new Error("Number.fake result is not 33 " + (0.1).fake())
       cut(Number, "fake", undefined)
       cut("shortcut", "fake", undefined)
       if (Number.fake) throw new Error("Number.fake still exists")
