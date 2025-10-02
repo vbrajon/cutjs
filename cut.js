@@ -210,8 +210,8 @@ function number_format(num, str = "", options = { locale: "en" }) {
   const separators = str.match(/[^0#]/g)
   const [thousandPart, decimalPart = ""] = separators ? str.split(separators.at(-1)) : ["", str]
   options.minimumIntegerDigits = thousandPart.match(/0/g)?.length
-  options.minimumFractionDigits = str === "." ? 0 : decimalPart.match(/0/g)?.length
-  options.maximumFractionDigits = str === "." ? 0 : decimalPart.match(/[0#]/g)?.length
+  options.minimumFractionDigits = str.endsWith(".") ? 0 : decimalPart.match(/0/g)?.length
+  options.maximumFractionDigits = str.endsWith(".") ? 0 : decimalPart.match(/[0#]/g)?.length
   return new Intl.NumberFormat(options.locale, options).format(num).replace(/E(-?)(\d)$/i, (m, s, n) => `E${s || options.notationPlus}${`0`.repeat(Math.max(0, options.notationZero - n.length))}${n}`)
   // .replace(/[,.]/g, (m) => (m === "," ? separators[0] : separators.at(-1)))
 }

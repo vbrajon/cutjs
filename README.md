@@ -119,7 +119,7 @@ invalid.transpose() //! Error: Not a matrix
 
 ```bash
 bun install --no-save @js-temporal/polyfill lodash-es
-bun test --watch --coverage
+bun test --watch --concurrent --coverage
 ```
 
 ## Principles
@@ -141,37 +141,38 @@ bun test --watch --coverage
    // Number: format
    // Date: format, parse, plus, minus, start, end
    ```
-3. **Combination**: Functions with the same name are combined into a single function that handles multiple types.
+3. **Union**: Functions with the same name are combined into a single function that handles multiple types.
    ```js
    // The "format" function is defined for String, Number, and Date
    format("hello world", "capitalize") //= "Hello world"
    format(123456.789, "$") //= "$123,456.79"
    format(new Date("2000"), "YYYY") //= "2000"
    ```
-4. **Powerful**: Few core functions that cover most use cases, removing the need for additional libraries like Lodash, Date-fns, or numfmt.
+4. **Powerful**: Few core functions that cover most use cases, removing the need for additional libraries like lodash, date-fns, or numfmt.
 
 ## Roadmap
 
-- [ ] Blog Post / Hacker News / Product Hunt
-- [ ] CODE: Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
+- [ ] BLOG: Post / X / Hacker News / Product Hunt
 - [ ] CODE: Typescript / TSDoc or JSDoc
+- [ ] DOC: comparison / benchmark with vanilla, lodash, date-fns, numfmt visible on the editor
 - [ ] DOC: per function, from Markdown or TSDoc, like motion.dev or sugarjs.com
-- [ ] DOC: button for Source Code + size / Gzip size
-- [ ] DOC: AI Copilot
-- [ ] DOC: Monaco Editor or Github.dev like
-- [ ] DOC: Collaboration / Multiplayer / CTRL-S to PR
+- [ ] PLAY: Button for Source Code + size / Gzip size
+- [ ] PLAY: Collaboration / Multiplayer / CTRL-S to Share Link or Submit PR
+- [ ] PLAY: AI Copilot
+- [ ] PLAY: Monaco Editor or Github.dev like
+- [ ] CODE: Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
 - [ ] EXPERIMENT: Iterator or AsyncIterator
-- [ ] EXPERIMENT: LSP for test runner
 - [ ] EXPERIMENT: Fuzzy tests
 - [ ] EXPERIMENT: Security tests
+- [ ] EXPERIMENT: LSP for test runner
 - [ ] EXPERIMENT: Registry / Composition / Distribution with AI as a Shadcn or v0 registry
 
 ## Inspiration
 
 - utils [lodash](https://lodash.com/)
 - utils [underscore](https://underscorejs.org/)
-- utils [just](https://anguscroll.com/just/)
 - utils [sugar](https://sugarjs.com/)
+- utils [just](https://anguscroll.com/just/)
 - date [date-fns](https://date-fns.org/)
 - date [moment](https://momentjs.com/)
 - date [dayjs](https://day.js.org/)
