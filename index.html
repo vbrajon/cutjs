@@ -3,7 +3,7 @@
 <link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='100'>✂️</text></svg>" />
 <body class="flex h-screen w-screen flex-col overscroll-none bg-black text-white">
   <div class="links z-10 flex overflow-auto font-[450] *:border *:border-2 *:border-transparent *:p-3 *:pt-2">
-    <a class="!p-0" href="#"><img class="m-1 w-16" alt="Cut JS Logo" src="https://cutjs.com/logo-dark.svg" /></a>
+    <a class="!p-0" href="#"><img class="m-1 min-w-16" alt="Cut JS Logo" src="https://cutjs.com/logo-dark.svg" /></a>
   </div>
   <div class="editor h-full w-full overflow-auto border-[20px] border-[#0d1117] bg-[#0d1117]">
     <div class="grid font-mono text-sm">
@@ -89,7 +89,8 @@
   }
   async function refresh(text) {
     if (typeof text === "string") textarea.value = text
-    if (text instanceof Event && !cut[location.hash.slice(1)]) location.hash = await compress(textarea.value)
+    if (text instanceof Event && (!location.hash || cut[location.hash.slice(1)])) history.pushState({}, "", "#play")
+    if (text instanceof Event) history.replaceState({}, '', `#${await compress(textarea.value)}`) // instead of location.hash = ... to avoid filling
     const info = await Promise.all(textarea.value.split("\n").map(comment))
     const error = info.findLast((v) => v.hasOwnProperty("error"))
     $(".editor").style = "outline: 1px solid rgb(255 255 255 / 5%);outline-offset: -1px;"
@@ -400,8 +401,8 @@
     .h-screen {
       height: 100vh;
     }
-    .w-16 {
-      width: calc(var(--spacing) * 16);
+    .min-w-16 {
+      min-width: calc(var(--spacing) * 16);
     }
     .w-full {
       width: 100%;
