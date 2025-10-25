@@ -1,0 +1,12 @@
+{
+  "name": "cutjs",
+  "version": "0.0.0",
+  "description": "JS utilities, extensible, dependency-free, to format and manipulate anything.",
+  "main": "cut.js",
+  "author": "Valentin Brajon",
+  "license": "MIT",
+  "prettier": {
+    "printWidth": 1000,
+    "semi": false
+  }
+}

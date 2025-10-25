@@ -55,15 +55,14 @@ new Date("2000T00:00").format("long, short", "ja") //= "2000年1月1日 0:00"
 123456.789.format("CN¥") //= "CN¥123,456.79"
 
 // Parse a Date Expression
-new Date().parse("2000-Q2-02") //= new Date("2000-04-02T00:00:00+01:00")
 new Date("2000T00:00").parse("tomorrow") //= new Date("2000-01-02T00:00:00+01:00")
 new Date("2000T00:00").parse("yesterday at 3pm") //= new Date("1999-12-31T15:00:00+01:00")
 new Date("2000T00:00").parse("in one hour, two minutes and thirty-four seconds") //= new Date("2000-01-01T01:02:34+01:00")
 new Date("2000T00:00").parse("6:30pm in three days") //= new Date("2000-01-04T18:30:00+01:00")
 
 // Manipulate a Date
-new Date("2000").plus("1 month").end("month").format("YYYY-MM-DD hh:mm") //= "2000-02-29 23:59"
-new Date("2000").minus({ years: 1, months: 2 }).plus("1 year, 2 months").format("YYYY-MM-DD hh:mm") //= "2000-01-01 00:00"
+new Date("2000T00:00").plus("1 month").end("month").format("YYYY-MM-DD hh:mm") //= "2000-02-29 23:59"
+new Date("2000T00:00").minus({ years: 1, months: 2 }).plus("1 year, 2 months").format("YYYY-MM-DD hh:mm") //= "2000-01-01 00:00"
 
 // Manipulate an Object or Array
 const users = [
@@ -120,6 +119,7 @@ invalid.transpose() //! Error: Not a matrix
 ```bash
 bun install --no-save @js-temporal/polyfill lodash-es
 bun test --watch --concurrent --coverage
+bunx prettier --write .
 ```
 
 ## Principles

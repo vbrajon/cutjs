@@ -288,9 +288,10 @@ export default [
   ["Number.duration", 0, ""],
   ["Date.format", date, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, undefined, "2019-01-20T10:09:08" + offset],
-  ["Date.format", date, "", ""], // NOTE: this should return the default format
+  ["Date.format", date, "", "2019-01-20T10:09:08" + offset],
   ["Date.format", date, "YYYY/MM/DD hhhmmmsssSSSZ", "2019/01/20 10h09m08s000" + offset],
   ["Date.format", date, "QQ WW", "Q1 W3"],
+  // NOTE: syntax alternative could be { date: "medium", time: "medium", locale: "zh" }.
   ["Date.format", date, "full", "Sunday, January 20, 2019"],
   ["Date.format", date, "long", "zh", "2019年1月20日"],
   ["Date.format", date, "medium", "Jan 20, 2019"],
@@ -318,6 +319,7 @@ export default [
   ["Date.format", new Date("Invalid"), "YYYY/MM/DD", "-"],
   // https://sugarjs.com/dates/
   // https://github.com/tj/go-naturaldate/blob/master/naturaldate_test.go
+  // ["Date.parse", new Date(), "2020-Q2-02", new Date("2020-04-02T00:00:00")],
   ["Date.parse", new Date("2000-01-01T00:00:00"), "now", new Date("2000-01-01T00:00:00")],
   ["Date.parse", new Date("2000-01-01T00:00:00"), "today", new Date("2000-01-01T00:00:00")],
   ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday", new Date("1999-12-31T00:00:00")],

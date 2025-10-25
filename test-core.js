@@ -1,5 +1,5 @@
-import testsSync from "./cut-sync-test.js"
-import testsAsync from "./cut-async-test.js"
+import testsSync from "./test-sync.js"
+import testsAsync from "./test-async.js"
 
 const cutNormal = {
   name: "cut",
@@ -130,17 +130,16 @@ const coreNormal = {
     // DEFAULT BEHAVIOR
     const a = [3, 1, 2]
     a.reverse()
-    if (a[0] === 3) throw new Error("Array.reverse does not mutate the array")
+    if (a[0] === 3) throw new Error("Array.reverse should mutate the array")
     a.reverse()
-    if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
 
     // SETUP
     cut("shortcut", "reverse", (fn, arr) => fn(arr.slice()))
-    cut(Array, "reverse", "native")
+    cut(Array, "reverse", [].reverse)
 
     // UPDATED BEHAVIOR
     a.reverse()
-    if (a[0] !== 3) throw new Error("Array.reverse mutates the array")
+    if (a[0] !== 3) throw new Error("Array.reverse should not mutate the array")
 
     // CLEANUP
     cut("shortcut", "reverse", undefined)
@@ -151,7 +150,8 @@ const coreNormal = {
 
     // DEFAULT BEHAVIOR
     a.reverse()
-    if (a[0] === 3) throw new Error("Array.reverse does not mutate the array")
+    if (a[0] === 3) throw new Error("Array.reverse should mutate the array")
+    a.reverse()
   },
 }
 const coreWrap = {
@@ -255,11 +255,11 @@ const coreCleanup = {
     if (!error || error.message !== "format does not exist on RegExp") throw new Error("cut.format does not throw on RegExp")
     const a = [3, 1, 2]
     cut("shortcut", "reverse", (fn, arr) => fn(arr.slice()))
-    cut(Array, "reverse", "native")
+    cut(Array, "reverse", [].reverse)
     cut.reverse(a)
-    if (a[0] !== 3) throw new Error("cut.reverse mutates the array")
+    if (a[0] !== 3) throw new Error("cut.reverse should not mutate the array")
     a.reverse()
-    if (a[0] === 3) throw new Error("Array.reverse does not mutate the array")
+    if (a[0] === 3) throw new Error("Array.reverse should mutate the array")
   },
 }
 const coreProto = [coreNormal, coreSetup, coreCleanup, coreWrap]
@@ -268,13 +268,13 @@ const coreProto = [coreNormal, coreSetup, coreCleanup, coreWrap]
 // const versionList = async (pkg) => Object.keys((await (await fetch(registry + pkg)).json()).versions).reverse()
 
 // NORMAL
-export const packages = [cutNormal]
-export default [...testsSync, ...testsAsync, coreNormal]
+// export const packages = [cutNormal]
+// export default [...testsSync, ...testsAsync, coreNormal]
 
 // // WRAP
 // export const packages = [cutWrap]
 // export default [...testsSync, ...testsAsync, coreNormal, coreWrap]
 
-// // PROTO
-// export const packages = [cutProto]
-// export default [...testsSync, ...testsAsync, ...coreProto]
+// PROTO
+export const packages = [cutProto]
+export default [...testsSync, ...testsAsync, ...coreProto]

@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-const files = ["cut-core-test.js"]
+const files = ["test-core"]
 
 globalThis.window = globalThis
 // process.env.TZ = "America/Santiago" // UTC-3
@@ -19,7 +19,7 @@ for (const file of files) {
           name = t[0].split(" - ")[0]
           const fn = module[name]
           if (!fn) continue // test.skip
-          test(`${file.slice(0, -8)} ${pkg.name} ${t[0]} #${i}`, async () => {
+          test(`${file} ${pkg.name} ${t[0]} #${i}`, async () => {
             const result = await fn(...t.slice(1, -1))
             expect(result).toEqual(t.at(-1))
           })
@@ -28,7 +28,7 @@ for (const file of files) {
           name = t.name.split(" - ")[0]
           const fn = module[name]
           if (!fn) continue // test.skip
-          test(`${file.slice(0, -8)} ${pkg.name} ${t.name} #${i}`, async () => {
+          test(`${file} ${pkg.name} ${t.name} #${i}`, async () => {
             const result = await t.fn(module)
             expect(result).toEqual(t.output)
           })

@@ -21,7 +21,7 @@
 <script type="module">
   import { codeToHtml } from "https://esm.sh/shiki"
   import cut from "./cut.js?window+prototype"
-  import tests from "./cut-core-test.js"
+  import tests from "./test-core.js"
   function generate(hash) {
     if (!hash) return EXEMPLE
     const imp = `import { ${Object.keys(cut[hash] || {}).join(", ")} } from "cutjs"`
@@ -90,7 +90,7 @@
   async function refresh(text) {
     if (typeof text === "string") textarea.value = text
     if (text instanceof Event && (!location.hash || cut[location.hash.slice(1)])) history.pushState({}, "", "#play")
-    if (text instanceof Event) history.replaceState({}, '', `#${await compress(textarea.value)}`) // instead of location.hash = ... to avoid filling
+    if (text instanceof Event) history.replaceState({}, "", `#${await compress(textarea.value)}`) // instead of location.hash = ... to avoid filling
     const info = await Promise.all(textarea.value.split("\n").map(comment))
     const error = info.findLast((v) => v.hasOwnProperty("error"))
     $(".editor").style = "outline: 1px solid rgb(255 255 255 / 5%);outline-offset: -1px;"
@@ -154,7 +154,9 @@
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   window.cache = {}
   window.tests = tests
+  const order = ["Object", "Array", "Function", "String", "Number", "Date", "RegExp"]
   $(".links").innerHTML += Object.keys(cut.constructors)
+    .sort((a, b) => order.indexOf(a) - order.indexOf(b))
     .map((cname) => `<a href="#${cname}">${cname}</a>`)
     .join("\n")
   $(".links").innerHTML += `<div class="ml-auto font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
