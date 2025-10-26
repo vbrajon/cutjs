@@ -1,4 +1,10 @@
-import * as cutfn from "./cut-fn.js"
+import * as f0 from "./0-base.js"
+import * as f1 from "./1-format.js"
+import * as f2 from "./2-parse.js"
+import * as f3 from "./3-sort-group.js"
+import * as f4 from "./4-map-reduce.js"
+import * as f5 from "./5-additional.js"
+const cutfn = { ...f0, ...f1, ...f2, ...f3, ...f4, ...f5 }
 function cut(...args) {
   if (args.length === 1) return wrap(...args)
   if (args[0] === "init") return init(...args)

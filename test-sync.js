@@ -146,6 +146,8 @@ export default [
   ["Array.mean", users.map((v) => v.age), 36],
   ["Array.median", users.map((v) => v.age), 25.5],
   ["Array.median", [1, 2, 3], 2],
+  ["Array.sum", users, "age", 144],
+  ["Array.min", users, "age", users[1].age], // NOTE: returning the object would be more logical
   {
     name: "Function.decorate",
     fn: ({ decorate }) => decorate((x) => x)(1),
