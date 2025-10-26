@@ -1,3 +1,22 @@
+// Constant
+export const CURRENCIES = Intl.supportedValuesOf("currency").reduce((acc, k) => ((acc[new Intl.NumberFormat("en", { style: "currency", currency: k }).format(0).split(/\s?0/)[0]] = acc[k] = k), acc), {})
+export const TIMES = [
+  ["millisecond", 1, "S", "Milliseconds", 3],
+  ["second", 1000, "s", "Seconds"],
+  ["minute", 1000 * 60, "m", "Minutes"],
+  ["hour", 1000 * 60 * 60, "h", "Hours"],
+  ["day", 1000 * 60 * 60 * 24, "D", "Date"],
+  ["week", 1000 * 60 * 60 * 24 * 7, "W", "Week"],
+  ["month", 1000 * 60 * 60 * 24 * 30, "M", "Month"],
+  ["quarter", 1000 * 60 * 60 * 24 * 30 * 3, "Q", "Quarter"],
+  ["year", 1000 * 60 * 60 * 24 * 365, "Y", "FullYear", 4],
+  ["timezone", null, "Z", "Timezone"],
+]
+TIMES.forEach(([k, v]) => (TIMES[k.toUpperCase()] = v))
+export const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+export const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+export const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi
+export const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 }
 // Generic
 export function is(a, b) {
   if (arguments.length === 1) {
@@ -69,6 +88,7 @@ export const Array_find = [].find
 export const Array_findIndex = [].findIndex
 export const Array_sort = [].sort
 export function Array_group(arr, keys) {
+  keys = [].concat(keys)
   return arr.reduce((acc, v) => {
     keys.reduce((acc, k, i) => {
       const key = access(v, k)
@@ -203,18 +223,18 @@ export function String_format(str, ...args) {
 // Number
 export function Number_duration(num) {
   if (!num) return ""
-  const units = DATE.slice().reverse()
+  const units = TIMES.slice().reverse()
   const [k, v] = units.find(([k, v]) => v && v <= Math.abs(num) * 1.1)
   return `${Math.round(+num / +v)} ${k}${Math.abs(Math.round(+num / +v)) > 1 ? "s" : ""}`
 }
-const CURRENCY = Intl.supportedValuesOf("currency").reduce((acc, k) => ((acc[new Intl.NumberFormat("en", { style: "currency", currency: k }).format(0).split(/\s?0/)[0]] = acc[k] = k), acc), {})
 export function Number_format(num, str = "", options = { locale: "en" }) {
   if (typeof num === "bigint") num = Number(num)
+  if (isNaN(num)) return "-"
   if (typeof str === "number") return num.toExponential(str === 0 ? 0 : str - 1).replace(/([+-\d.]+)e([+-\d]+)/, (m, n, e) => +`${n}e${e - Math.floor(e / 3) * 3}` + (["mµnpfazyrq", "kMGTPEZYRQ"][+(e > 0)].split("")[Math.abs(Math.floor(e / 3)) - 1] || ""))
   str = str.replace(/[e](\+?)(0*)$/gi, (m, p, z) => (((options.notation = "scientific"), (options.notationPlus = p), (options.notationZero = z?.length ?? 0)), ""))
   str = str.replace(/[+]/g, () => ((options.signDisplay = "always"), "")) // exceptZero
   str = str.replace(/[%]/g, () => ((options.style = "percent"), ""))
-  str = str.replace(RegExp(`(${Object.keys(CURRENCY).join("|").replace(/\$/g, "\\$")})`), (m) => ((options.style = "currency"), (options.currency = CURRENCY[m]), ""))
+  str = str.replace(RegExp(`(${Object.keys(CURRENCIES).join("|").replace(/\$/g, "\\$")})`), (m) => ((options.style = "currency"), (options.currency = CURRENCIES[m]), ""))
   str = str.replace(/[a-z]{2,3}(-[a-z]{2,4})?(-[a-z0-9]{2,3})?/i, (m) => (Intl.NumberFormat.supportedLocalesOf(m).length ? ((options.locale = m), "") : m))
   str = str.replace(/\s/g, "")
   const separators = str.match(/[^0#]/g)
@@ -225,31 +245,14 @@ export function Number_format(num, str = "", options = { locale: "en" }) {
   return new Intl.NumberFormat(options.locale, options).format(num).replace(/E(-?)(\d)$/i, (m, s, n) => `E${s || options.notationPlus}${`0`.repeat(Math.max(0, options.notationZero - n.length))}${n}`)
   // .replace(/[,.]/g, (m) => (m === "," ? separators[0] : separators.at(-1)))
 }
-// Date: unit, ms, letter, fn, zeros
-const DATE = [
-  ["millisecond", 1, "S", "Milliseconds", 3],
-  ["second", 1000, "s", "Seconds"],
-  ["minute", 1000 * 60, "m", "Minutes"],
-  ["hour", 1000 * 60 * 60, "h", "Hours"],
-  ["day", 1000 * 60 * 60 * 24, "D", "Date"],
-  ["week", 1000 * 60 * 60 * 24 * 7, "W", "Week"],
-  ["month", 1000 * 60 * 60 * 24 * 30, "M", "Month"],
-  ["quarter", 1000 * 60 * 60 * 24 * 30 * 3, "Q", "Quarter"],
-  ["year", 1000 * 60 * 60 * 24 * 365, "Y", "FullYear", 4],
-  ["timezone", null, "Z", "Timezone"],
-]
-DATE.forEach(([k, v]) => (DATE[k.toUpperCase()] = v))
-const DAY = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-const MONTH = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
-const NUMBER = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 }
-const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi
+// Date
 export function Date_parse(from, str) {
   if (/now/i.test(str) && !/from\s+now/.test(str)) return from
   str = str.replace(/today/i, () => ((from = Date_start(from, "day")), ""))
   str = str.replace(/tomorrow/i, "next day").replace(/yesterday/i, "last day")
-  str = str.replace(NUMBER_REGEX, (match, tens, ones) => NUMBER[match.toLowerCase()] || NUMBER[tens.toLowerCase()] + (ones ? NUMBER[ones.toLowerCase()] : 0))
-  str = str.replace(RegExp(`(${MONTH.join("|")})`, "i"), (m) => ((from = Date_plus(Date_start(from, "year"), { months: MONTH.indexOf(m.toLowerCase()) - (/last/.test(str) ? 12 : 0) })), ""))
-  str = str.replace(RegExp(`(${DAY.join("|")})`, "i"), (m) => ((from = Date_plus(Date_start(from, "week"), { days: 1 + DAY.indexOf(m.toLowerCase()) - (/last/.test(str) ? 7 : 0) })), ""))
+  str = str.replace(NUMBER_REGEX, (match, tens, ones) => NUMBER_WORDS[match.toLowerCase()] || NUMBER_WORDS[tens.toLowerCase()] + (ones ? NUMBER_WORDS[ones.toLowerCase()] : 0))
+  str = str.replace(RegExp(`(${MONTHS.join("|")})`, "i"), (m) => ((from = Date_plus(Date_start(from, "year"), { months: MONTHS.indexOf(m.toLowerCase()) - (/last/.test(str) ? 12 : 0) })), ""))
+  str = str.replace(RegExp(`(${DAYS.join("|")})`, "i"), (m) => ((from = Date_plus(Date_start(from, "week"), { days: 1 + DAYS.indexOf(m.toLowerCase()) - (/last/.test(str) ? 7 : 0) })), ""))
   str = str.replace(/(\d+)(st|nd|rd|th)/i, (_, num) => ((from = Date_plus(Date_start(from, "day"), { days: num - 1 })), ""))
   str = str.replace(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i, (_, hours = 0, minutes = 0, seconds = 0, ampm) => ((hours && minutes) || ampm ? ((from = Date_plus(Date_start(from, "day"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds })), "") : _))
   return Date_modify(from, str, /(last|ago)/.test(str) ? "-" : "+")
@@ -259,7 +262,7 @@ export function Date_relative(from, to = new Date()) {
 }
 export function Date_getWeek(date) {
   const soy = new Date(date.getFullYear(), 0, 1)
-  const doy = Math.floor((+date - +soy) / DATE.DAY) + 1
+  const doy = Math.floor((+date - +soy) / TIMES.DAY) + 1
   const dow = date.getDay() || 7
   return Math.floor((10 + doy - dow) / 7) || Date_getWeek(new Date(date.getFullYear(), 0, 0))
 }
@@ -292,7 +295,7 @@ export function Date_format(date, format, locale = "en") {
     if (parts.includes("second")) options.second = "2-digit"
     return date.toLocaleString(locale, options)
   }
-  return DATE.reduce((str, [unit, ms, letter, fn, zeros = 2]) => {
+  return TIMES.reduce((str, [unit, ms, letter, fn, zeros = 2]) => {
     return str.replace(RegExp(`${letter}+`, "g"), (m) => {
       if (letter === "Z") return Date_getTimezone(date)
       if (letter === "W") return `W${Date_getWeek(date)}`
@@ -315,7 +318,7 @@ export function Date_modify(date, options, sign) {
   if (options.quarters) options.months = options.months || 0 + options.quarters * 3
   Object.keys(options).forEach((k) => (options[k] = Math.round(+options[k]) || options[k]))
   const d = new Date(date)
-  const units = DATE.filter((unit) => ["millisecond", "second", "minute", "hour", "day", "month", "year"].includes(unit[0]))
+  const units = TIMES.filter((unit) => ["millisecond", "second", "minute", "hour", "day", "month", "year"].includes(unit[0]))
   const fn = {
     "+": (unit, n) => d[`set${unit[3]}`](d[`get${unit[3]}`]() + n),
     "-": (unit, n) => d[`set${unit[3]}`](d[`get${unit[3]}`]() - n),
@@ -413,14 +416,6 @@ export function shortcut_sort(fn, ...args) {
   // args[0] = args[0].slice() // NOTE: change default mutating behavior
   args[1] = f(args[1])
   return fn(...args)
-}
-export function shortcut_group(fn, ...args) {
-  args[1] = [].concat(args[1])
-  return fn(...args)
-}
-export function shortcut_format(fn, ...args) {
-  const v = fn(...args)
-  return /^(Invalid Date|NaN|null|undefined)/.test(v) ? "-" : v
 }
 export function shortcut_sum_min_max_mean_median(fn, ...args) {
   if (args[1]) return fn(cut.Array.map(...args))
