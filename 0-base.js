@@ -39,9 +39,10 @@ export function is(a, b) {
   if (arguments.length === 1) {
     if (Number.isNaN(a)) return "NaN"
     if (!a || !a.constructor) return Object.prototype.toString.call(a).slice(8, -1)
+    if (a[Symbol.iterator] || a[Symbol.asyncIterator]) return "Iterator"
     return a.constructor.name
   }
-  if (!b) return a === b || isNaN(a) === isNaN(b)
+  if (!b) return a === b || is(a) === is(b)
   return a?.constructor === b || b?.constructor === a
 }
 access.dotpath = Function_memoize((str) => str.split(/(?:\.|\[["']?([^\]"']*)["']?\])/).filter((x) => x))

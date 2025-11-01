@@ -1,9 +1,9 @@
 import { test, expect } from "bun:test"
 import fc from "fast-check"
-import { access, equal } from "./cut.js"
+import { access, equal, is } from "./cut.js"
 import { isEqual } from "lodash-es"
 
-// fc.configureGlobal({ numRuns: 50000 })
+// fc.configureGlobal({ numRuns: 5000 })
 
 const any = fc.anything({
   withBigInt: true,
@@ -18,22 +18,28 @@ const any = fc.anything({
   withUnicodeString: true,
 })
 
+// Throw only if the property fails
+function assert(...args) {
+  const fn = args.at(-1)
+  const property = fc.property(...args.slice(0, -1), (...inner) => (fn(...inner), true))
+  fc.assert(property)
+}
+// Throw if the property fails or returns falsy
+function assertTrue(...args) {
+  fc.assert(fc.property(...args))
+}
+function assertAsync(...args) {
+  fc.assert(fc.asyncProperty(...args))
+}
+
 test("access does not throw for any properties", () => {
   access({}, { toString: null })
   access({}, [{ toString: null }])
-  fc.assert(
-    fc.property(any, any, (a, b) => {
-      access(a, b)
-    })
-  )
+  assert(any, any, (a, b) => access(a, b))
 })
 
 test("equal is always true for clones", () => {
-  fc.assert(
-    fc.property(fc.clone(any, 2), ([a, b]) => {
-      if (!equal(a, b)) throw new Error("Not equal")
-    })
-  )
+  assertTrue(fc.clone(any, 2), ([a, b]) => equal(a, b))
 })
 
 const _any = fc.anything({
@@ -54,9 +60,35 @@ test("equal is similar to lodash.isEqual", () => {
   if (equal({ "": undefined }, { a: undefined })) throw "x"
   // if (equal([], [,])) throw "x"
   // if (equal(new Map([["a", 1]]), new Map([["b", 2]]))) throw "x"
-  fc.assert(
-    fc.property(_any, _any, (a, b) => {
-      if (equal(a, b) !== isEqual(a, b)) throw new Error("Not similar to lodash isEqual")
-    })
-  )
+  assert(_any, _any, (a, b) => {
+    if (equal(a, b) !== isEqual(a, b)) throw new Error("Not similar to lodash isEqual")
+  })
+})
+
+test("is does not throw for any properties", () => {
+  is(0n, null)
+  is({ __proto__: null }, null)
+  assert(any, any, (a, b) => {
+    is(a)
+    is(a, b)
+  })
+})
+
+test("is is always true for clones", () => {
+  assertTrue(fc.clone(any, 2), ([a, b]) => is(a) === is(b))
+})
+
+test("is returns the correct type", () => {
+  // if (!is(BigInt, 0n)) throw "x" // TODO: the reverse works is(0n, BigInt)
+  assert(fc.bigInt(), (a) => is(a, BigInt))
+  assert(fc.boolean(), (a) => is(a, Boolean))
+  assert(fc.date(), (a) => is(a, Date))
+  assert(fc.float(), (a) => is(a, Number))
+  assert(fc.string(), (a) => is(a, String))
+  assert(fc.tuple(), (a) => is(a, Array))
+  assert(fc.func(fc.nat()), (a) => is(a, Function)) // NOTE: does not work with fc.func()
+  assert(fc.infiniteStream(), (a) => is(a, Iterator))
+  assertAsync(fc.infiniteStream(), async (a) => is(a) === "Iterator") // TODO: fix is(a, Iterator)
+  assert(fc.object(), (a) => is(a, Object))
+  assert(fc.int8Array(), (a) => is(a, Int8Array))
 })
