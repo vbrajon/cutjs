@@ -16,21 +16,24 @@ export const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "fr
 export const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 export const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi
 export const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 }
+export const { compare } = new Intl.Collator(undefined, { numeric: true })
 export function access(obj, path) {
   if (obj == null || path == null) return obj
-  if (Object.hasOwn(obj, path)) return obj[path]
+  if (typeof path !== "object" && Object.hasOwn(obj, path)) return obj[path]
   if (typeof path === "string") return access(obj, access.dotpath(path))
   if (path instanceof Function) return path(obj)
-  if (path instanceof Array) return path.reduce((a, p) => (a && a[p] != null ? a[p] : undefined), obj)
+  if (path instanceof Array) return path.reduce((a, p) => (a && typeof p !== "object" && a[p] != null ? a[p] : undefined), obj)
   if (path instanceof Object) return Object.entries(path).reduce((a, [k, v]) => ((a[k] = access(obj, v)), a), {})
 }
 export function equal(a, b) {
   if (a === b) return true
   if (a == null || b == null) return false
   if (a.constructor !== b.constructor) return false
-  if (![Object, Array].includes(a.constructor)) return a.toString() === b.toString()
-  if (Object.keys(a).length !== Object.keys(b).length) return false
-  return Object.keys(a).every((k) => equal(a[k], b[k]))
+  if ({ Array: 1, Object: 1 }[Object.prototype.toString.call(a).slice(8, -1)]) {
+    if (Object.keys(a).length !== Object.keys(b).length) return false
+    return Object.keys(a).every((k) => (k || Object.hasOwn(b, k)) && equal(a[k], b[k]))
+  }
+  return a.toString() === b.toString()
 }
 export function is(a, b) {
   if (arguments.length === 1) {

@@ -1,3 +1,4 @@
+import cut from "./cut.js"
 export function transform(obj, fn) {
   function inner(o, path) {
     if (!o || typeof o !== "object") return fn(o, path)

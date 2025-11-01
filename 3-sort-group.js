@@ -1,3 +1,4 @@
+import { access, compare } from "./0-base.js"
 export const Array_sort = [].sort
 export function Array_group(arr, keys) {
   keys = [].concat(keys)
@@ -13,7 +14,6 @@ export function Array_group(arr, keys) {
   }, {})
 }
 export function shortcut_sort(fn, ...args) {
-  const { compare } = new Intl.Collator(undefined, { numeric: true })
   function defaultSort(a, b) {
     if (typeof a !== typeof b) return typeof a > typeof b ? 1 : -1
     if (typeof a === "number") return a === b ? 0 : a > b ? 1 : -1

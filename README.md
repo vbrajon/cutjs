@@ -117,8 +117,8 @@ invalid.transpose() //! Error: Not a matrix
 ## Development
 
 ```bash
-bun install --no-save @js-temporal/polyfill lodash-es
-bun test --watch --concurrent --coverage
+bun install --no-save fast-check lodash-es @js-temporal/polyfill
+bun test --watch --concurrent --coverage --only-failures
 bunx prettier --write .
 ```
 
@@ -154,6 +154,7 @@ bunx prettier --write .
 
 - [ ] BLOG: Post / X / Hacker News / Product Hunt
 - [ ] CODE: Typescript / TSDoc or JSDoc
+- [ ] CODE: Versionning per function v1 2025-10 (1.2025.10), add tests per version
 - [ ] DOC: comparison / benchmark with vanilla, lodash, date-fns, numfmt visible on the editor
 - [ ] DOC: per function, from Markdown or TSDoc, like motion.dev or sugarjs.com
 - [ ] PLAY: Button for Source Code + size / Gzip size
@@ -162,7 +163,7 @@ bunx prettier --write .
 - [ ] PLAY: Monaco Editor or Github.dev like
 - [ ] CODE: Additional Fn (forEach, findIndex, findLastIndex, some, every, flat, flatMap, reduceRight, concat, slice)
 - [ ] EXPERIMENT: Iterator or AsyncIterator
-- [ ] EXPERIMENT: Fuzzy tests
+- [x] EXPERIMENT: Fuzzy tests
 - [ ] EXPERIMENT: Security tests
 - [ ] EXPERIMENT: LSP for test runner
 - [ ] EXPERIMENT: Registry / Composition / Distribution with AI as a Shadcn or v0 registry
@@ -177,9 +178,16 @@ bunx prettier --write .
 - date [moment](https://momentjs.com/)
 - date [dayjs](https://day.js.org/)
 - date [tempo](https://tempo.formkit.com/)
+- [d3](https://d3js.org/)
+- [jquery](https://jquery.com/)
 - [ixjs](https://github.com/ReactiveX/IxJS)
 - [rxjs](https://rxjs.dev/)
+- [most](https://mostcore.rtfd.io/)
+- [ramda](https://ramdajs.com/)
 - [mathjs](https://mathjs.org/)
 - [xstate](https://xstate.js.org/)
 - [motion](https://motion.dev/)
 - [microdiff](https://github.com/AsyncBanana/microdiff)
+- [numfmt](https://npmjs.com/package/numfmt)
+- [sheetjs](https://sheetjs.com/)
+- [o-spreadsheet](https://github.com/odoo/o-spreadsheet)
