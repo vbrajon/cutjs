@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test"
 import fc from "fast-check"
-import { access, equal, is } from "./cut.js"
+import { access, equal, is, format, parse } from "./cut.js"
 import { isEqual } from "lodash-es"
 
 // fc.configureGlobal({ numRuns: 5000 })
@@ -30,6 +30,19 @@ function assertTrue(...args) {
 }
 function assertAsync(...args) {
   fc.assert(fc.asyncProperty(...args))
+}
+function assertThrows(...args) {
+  const fn = args.at(-1)
+  const property = fc.property(...args.slice(0, -1), (...inner) => {
+    let threw = false
+    try {
+      fn(...inner)
+    } catch (e) {
+      threw = true
+    }
+    if (!threw) throw new Error("Did not throw")
+  })
+  fc.assert(property)
 }
 
 test("access does not throw for any properties", () => {
@@ -91,4 +104,25 @@ test("is returns the correct type", () => {
   assertAsync(fc.infiniteStream(), async (a) => is(a) === "Iterator") // TODO: fix is(a, Iterator)
   assert(fc.object(), (a) => is(a, Object))
   assert(fc.int8Array(), (a) => is(a, Int8Array))
+})
+
+test("format does not throw for any String, Number or Date", () => {
+  // format(0n) // TODO: BigInt, cut.Number.format supports it but cut.format does not
+  const strnumdate = fc.oneof(fc.string(), fc.float(), fc.date())
+  assert(strnumdate, (a) => format(a))
+})
+
+test("format throw for anything else than String, Number or Date", () => {
+  const notstrnumdate = any.filter((a) => ![String, Number, Date].includes(a?.constructor))
+  assertThrows(notstrnumdate, (a) => format(a))
+})
+
+test("format always returns a string", () => {
+  const strnumdate = fc.oneof(fc.string(), fc.float(), fc.date())
+  assertTrue(strnumdate, (a) => typeof format(a) === "string")
+})
+
+test("parse does not throw for any String", () => {
+  const d = new Date()
+  assert(fc.string(), (a) => parse(d, a))
 })
