@@ -95,7 +95,7 @@ export default [
   ["Object.keys", user, ["name", "age"]],
   ["Object.values", user, ["John Doe", 29]],
   ["Object.entries", user, [["name", "John Doe"], ["age", 29]]], // prettier-ignore
-  ["Object.fromEntries", Object.entries(user), user],
+  ["Array.fromEntries", Object.entries(user), user],
   ["Object.map", user, (v) => v * 2 || v, { name: "John Doe", age: 58 }],
   ["Object.filter", user, Number, { age: 29 }],
   ["Object.find", user, (v) => v > 10, 29],

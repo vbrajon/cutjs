@@ -26,16 +26,11 @@ Play with it here or in the TS Playground https://tsplay.dev/cutjs
 
 // Normal use
 import { map } from "cutjs"
-map({ a: 1 }, (v) => v + 1) //= {"a":2}
+map({ a: 1 }, (v) => v - 1) //= {"a":0}
 
-// Proxy use, access .data or .error
-import cut from "cutjs"
-cut({ a: 1 }).map((v) => v + 1).data //= {"a":2}
-cut({ a: 1 }).x.y.error //= new Error()
-
-// Prototype use, call directly on the object
-import "cutjs?window+prototype"
-({ a: 1 }).map((v) => v + 1) //= {"a":2}
+// Prototype use
+import "cutjs?proto"
+({ a: 1, b: 2 }).values().sum((v) => v - 1) //= 1
 
 // Format a Date
 new Date("2000").format("YYYY-QQ") //= "2000-Q1"
@@ -74,6 +69,8 @@ const usersByCity = users.sort("-age").group("city") //~ {"Paris":[{"name":"Jean
 const avgAgeByCity = usersByCity.map((g) => g.mean("age")) //~ {"Paris":35...}
 
 // Manipulate a Function
+function onEvent() {}
+function expensiveFn() {}
 const event = onEvent.throttle(1000).debounce(500)
 const cache = expensiveFn.memoize()
 const _fetch = fetch.decorate((fn, url, options) => {
@@ -81,24 +78,6 @@ const _fetch = fetch.decorate((fn, url, options) => {
   const timer = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeout))
   return Promise.race([fn(url, options), timer])
 })
-
-// Add a Function
-cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
-
-// Add a shortcut
-cut("shortcut", "transpose", (fn, arr) => {
-  if (arr.some((row) => row.length !== arr[0].length)) throw new Error("Not a matrix")
-  return fn(arr)
-})
-
-// Add an alias
-cut(Array, "swap", cut.Array.transpose)
-
-// And use it
-const matrix = [[1, 2, 3], [4, 5, 6]]
-matrix.swap() //= [[1,4],[2,5],[3,6]]
-const invalid = [[1], [2, 3]]
-invalid.transpose() //! Error: Not a matrix
 ```
 
 ## Functions

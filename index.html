@@ -20,11 +20,11 @@
 </script> -->
 <script type="module">
   import { codeToHtml } from "https://esm.sh/shiki"
-  import cut from "./cut.js?window+prototype"
+  import cut from "./cut.js?proto"
   import tests from "./test-core.js"
   function generate(hash) {
     if (!hash) return EXEMPLE
-    const imp = `import { ${Object.keys(cut[hash] || {}).join(", ")} } from "cutjs"`
+    const imp = `import { ${Object.keys(cut.by.constructor[hash] || {}).join(", ")} } from "cutjs"`
     const teststr = tests
       .filter((t) => t[0] && t[0].split(".")[0] === hash)
       .map((t, i) => `${t[0].split(".")[1]}(${t.slice(1, -1).map(stringify).join(", ")}) //= ${stringify(t.at(-1))}`)
@@ -36,14 +36,13 @@
     return [imp, teststr, testfn].filter(Boolean).join("\n\n") + "\n"
   }
   function stringify(v) {
-    if (v === undefined) return "undefined"
-    if (v === null) return "null"
     if (Object.is(v, -0)) return "-0"
+    if (v == null || typeof v === "number" || typeof v === "boolean") return String(v)
+    if (typeof v === "bigint") return String(v) + "n"
     if (typeof v === "string") return JSON.stringify(v)
-    if (typeof v === "number" || typeof v === "boolean") return String(v)
     if (v instanceof Date) return +new Date(cut.format(v)) ? `new Date("${cut.format(v)}")` : `new Date(${+v})`
     if (v instanceof RegExp) return v.toString()
-    for (const constructor of [Array, Boolean, Date, Error, Function, Number, Object, RegExp, String, Symbol]) {
+    for (const constructor of [Array, BigInt, Boolean, Date, Error, Function, Number, Object, RegExp, String, Symbol]) {
       if (v === constructor) return `${constructor.name}`
     }
     for (const constructor of [ArrayBuffer, Date, Error, Map, Set, WeakMap, WeakSet]) {
@@ -53,6 +52,7 @@
     const trim = code => code.split("\n").map((l, i, a) => i ? l.slice(Math.min(...a.slice(1).filter(l => l.trim()).map(l => l.match(/^\s*/)[0].length))) : l).join("\n") // prettier-ignore
     if (v instanceof Function) return trim(v.toString())
     if (v instanceof Array) return `[${v.map(stringify).join(",")}]`
+    if (v[Symbol.iterator]) return "{ [Symbol.iterator]() {} }"
     if (v instanceof Object) return `{${Object.entries(v).map(([k, v]) => `${JSON.stringify(k)}:${stringify(v)}`).join(",")}}` // prettier-ignore
     return String(v)
   }
@@ -123,8 +123,8 @@
       else el.style = `color:${colors[i]}8;`
     })
     const hash = location.hash.slice(1)
-    document.title = `Cut.js - ${!hash ? "README" : cut[hash] ? hash : "Play"}`
-    if (hash && !cut[hash]) return refresh(await decompress(hash))
+    document.title = `Cut.js - ${!hash ? "README" : cut.by.constructor[hash] ? hash : "Play"}`
+    if (hash && !cut.by.constructor[hash]) return refresh(await decompress(hash))
     return refresh(generate(hash))
   }
   async function compress(text) {
@@ -154,11 +154,7 @@
   window.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   window.cache = {}
   window.tests = tests
-  const order = ["Object", "Array", "Function", "String", "Number", "Date", "RegExp"]
-  $(".links").innerHTML += Object.keys(cut.constructors)
-    .sort((a, b) => order.indexOf(a) - order.indexOf(b))
-    .map((cname) => `<a href="#${cname}">${cname}</a>`)
-    .join("\n")
+  $(".links").innerHTML += ["Generic", "Object", "Array", "Function", "String", "Number", "Date", "RegExp"].map((cname) => `<a href="#${cname}">${cname}</a>`).join("\n")
   $(".links").innerHTML += `<div class="ml-auto font-mono flex gap-2"><span style="color:#7d0"></span><span style="color:#f34"></span></div>`
   const textarea = $(".editor textarea")
   const maxSize = (textarea.clientWidth - 40) / 9

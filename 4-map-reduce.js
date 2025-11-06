@@ -2,7 +2,7 @@ import { access, equal } from "./0-base.js"
 export const Object_keys = Object.keys
 export const Object_values = Object.values
 export const Object_entries = Object.entries
-export const Object_fromEntries = Object.fromEntries
+export const Array_fromEntries = Object.fromEntries
 export function Object_map(obj, fn) {
   return Object.keys(obj).reduce((acc, k, i) => {
     acc[k] = fn(obj[k], k, i, obj)

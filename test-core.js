@@ -6,27 +6,12 @@ const cutNormal = {
   versions: ["latest"],
   import: async (version) => {
     const module = await import("./cut")
-    const cut = module.default
+    const cut = module
     const fns = {}
-    for (const cname in cut.constructors) {
-      for (const fname in cut[cname]) {
-        fns[fname] = module[fname]
-        fns[`${cname}.${fname}`] = cut[cname][fname]
-      }
-    }
-    return fns
-  },
-}
-const cutWrap = {
-  name: "cut-wrap",
-  versions: ["latest"],
-  import: async (version) => {
-    const module = await import("./cut")
-    const cut = module.default
-    const fns = {}
-    for (const cname in cut.constructors) {
-      for (const fname in cut[cname]) {
-        fns[fname] = fns[`${cname}.${fname}`] = (x, ...args) => cut(x)[fname](...args).data
+    for (const fname in cut) {
+      for (const cname in cut[fname]) {
+        fns[fname] = fns[`Generic.${fname}`] = fns[`${cname}.${fname}`] = cut[fname]
+        // fns[`${cname}.${fname}`] = cut[fname][cname] // INTERNAL METHODS
       }
     }
     return fns
@@ -36,21 +21,18 @@ const cutProto = {
   name: "cut-proto",
   versions: ["latest"],
   import: async (version) => {
-    await import("./cut?window+prototype")
+    await import("./cut?proto")
     const fns = {}
-    for (const cname in cut.constructors) {
-      for (const fname in cut[cname]) {
-        fns[fname] = (x, ...args) => {
+    for (const fname in cut) {
+      for (const cname in cut[fname]) {
+        const fn = (x, ...args) => {
           if (x && x[fname]) return x[fname](...args)
           return cut[fname](x, ...args)
         }
-        fns[`${cname}.${fname}`] = (x, ...args) => {
-          if (x && x[fname]) return x[fname](...args)
-          return cut[cname][fname](x, ...args)
-        }
+        fns[fname] = fns[`Generic.${fname}`] = fns[`${cname}.${fname}`] = fn
       }
     }
-    fns.core = () => {}
+    fns.proto = {}
     return fns
   },
 }
@@ -121,9 +103,9 @@ const lodash = {
   },
 }
 
-const coreNormal = {
-  name: "core - noMutation",
-  fn: () => {
+const testNormal = {
+  name: "proto - noMutation",
+  fn: (cut) => {
     // DEFAULT BEHAVIOR
     const a = [3, 1, 2]
     a.reverse()
@@ -131,16 +113,14 @@ const coreNormal = {
     a.reverse()
 
     // SETUP
-    cut("shortcut", "reverse", (fn, arr) => fn(arr.slice()))
-    cut(Array, "reverse", [].reverse)
+    cut.reverse = { Array: [].reverse, shortcut: (fn, arr) => fn(arr.slice()) }
 
     // UPDATED BEHAVIOR
     a.reverse()
     if (a[0] !== 3) throw new Error("Array.reverse should not mutate the array")
 
     // CLEANUP
-    cut("shortcut", "reverse", undefined)
-    cut(Array, "reverse", undefined)
+    delete cut.reverse
     if (cut.reverse) throw new Error("cut.reverse still exists")
     if (cut.Array.reverse) throw new Error("cut.Array.reverse still exists")
     if (cut.shortcuts.reverse) throw new Error("cut.shortcuts.reverse still exists")
@@ -151,8 +131,8 @@ const coreNormal = {
     a.reverse()
   },
 }
-const coreWrap = {
-  name: "core - wrap",
+const testWrap = {
+  name: "proto - wrap",
   fn: () => {
     const initial = { a: 1 }
     // 1. Wrap
@@ -191,12 +171,12 @@ const coreWrap = {
     if (!err) throw new Error("Throws once .data or .error are accessed")
   },
 }
-const coreSetup = {
-  name: "core - setup",
+const testSetup = {
+  name: "proto - setup",
   fn: () => {
     // cut.Object.fake = 1 / 3
     // cut.shortcuts.fake = (x) => Math.round(x * 100)
-    if (cut.mode !== "window+prototype") throw new Error("cut.mode is not window+prototype")
+    if (cut.mode !== "proto") throw new Error("cut.mode is not proto")
     cut("shortcut", "fake", (x) => Math.round(x * 100))
     cut(Number, "fake", 1 / 3)
     if ((0.1).fake() !== 33) throw new Error("Number.fake result is not 33 " + (0.1).fake())
@@ -229,8 +209,8 @@ const coreSetup = {
     if (cut.swap(matrix).length !== 3) throw new Error("Matrix not transposed") // [[1, 4], [2, 5], [3, 6]]
   },
 }
-const coreCleanup = {
-  name: "core - cleanup",
+const testCleanup = {
+  name: "proto - cleanup",
   fn: () => {
     for (let property in { a: 1 }) if (property !== "a") throw new Error(`Enumerable property ${property} still exists`)
     // if (Number.abs !== Math.abs) throw new Error("Number.abs !== Math.abs")
@@ -259,23 +239,15 @@ const coreCleanup = {
     if (a[0] === 3) throw new Error("Array.reverse should mutate the array")
   },
 }
-const coreProto = [coreNormal, coreSetup, coreCleanup, coreWrap]
+const testsProto = [testNormal, testSetup, testCleanup, testWrap]
 
 // const registry = "https://registry.npmjs.org/"
 // const versionList = async (pkg) => Object.keys((await (await fetch(registry + pkg)).json()).versions).reverse()
 
-// // NORMAL
-// export const packages = [cutNormal]
-// export default [...testsSync, ...testsAsync, coreNormal]
-
-// // WRAP
-// export const packages = [cutWrap]
-// export default [...testsSync, ...testsAsync, coreNormal, coreWrap]
+// NORMAL
+export const packages = [cutNormal, lodash, vanilla]
+export default [...testsSync, ...testsAsync]
 
 // // PROTO
-// export const packages = [cutProto]
-// export default [...testsSync, ...testsAsync, ...coreProto]
-
-// COMPARE
-export const packages = [cutNormal, lodash, vanilla]
-export default [...testsSync, ...testsAsync, coreNormal]
+// export const packages = [cutProto, lodash, vanilla]
+// export default [...testsSync, ...testsAsync, ...testsProto]

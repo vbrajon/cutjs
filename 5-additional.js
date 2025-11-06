@@ -93,7 +93,7 @@ export function RegExp_minus(re, flags) {
 }
 export function shortcut_unique_min_max(fn, ...args) {
   if (args[1]) {
-    const mapped = cut.Array.map(...args)
+    const mapped = cut.map(...args)
     const result = fn(mapped)
     if (result instanceof Array) return result.map((v) => args[0][mapped.indexOf(v)])
     return args[0][mapped.indexOf(result)]
@@ -101,6 +101,6 @@ export function shortcut_unique_min_max(fn, ...args) {
   return fn(...args)
 }
 export function shortcut_sum_mean_median(fn, ...args) {
-  if (args[1]) return fn(cut.Array.map(...args))
+  if (args[1]) return fn(cut.map(...args))
   return fn(...args)
 }
