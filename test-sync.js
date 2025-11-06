@@ -149,9 +149,16 @@ export default [
   ["Array.max", users.map((v) => v.age), 71],
   ["Array.mean", users.map((v) => v.age), 36],
   ["Array.median", users.map((v) => v.age), 25.5],
-  ["Array.median", [1, 2, 3], 2],
+  ["Array.mean", [1, 2, 9], 4],
+  ["Array.median", [1, 2, 9], 2],
+  // NOTE: returning the initial object when using shortcut
+  ["Array.unique", users, (v) => v.age, [users[0], users[1], users[3]]],
+  ["Array.unique", users, "age", [users[0], users[1], users[3]]],
   ["Array.sum", users, "age", 144],
-  ["Array.min", users, "age", users[1].age], // NOTE: returning the object would be more logical
+  ["Array.min", users, "age", users[1]],
+  ["Array.max", users, "age", users[3]],
+  ["Array.mean", users, "age", 36],
+  ["Array.median", users, "age", 25.5],
   {
     name: "Function.decorate",
     fn: ({ decorate }) => decorate((x) => x)(1),

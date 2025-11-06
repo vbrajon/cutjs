@@ -91,7 +91,16 @@ export function RegExp_plus(re, flags) {
 export function RegExp_minus(re, flags) {
   return new RegExp(re.source, [...new Set(re.flags.replace(new RegExp(`[${flags}]`, "g"), ""))].sort().join(""))
 }
-export function shortcut_sum_min_max_mean_median(fn, ...args) {
+export function shortcut_unique_min_max(fn, ...args) {
+  if (args[1]) {
+    const mapped = cut.Array.map(...args)
+    const result = fn(mapped)
+    if (result instanceof Array) return result.map((v) => args[0][mapped.indexOf(v)])
+    return args[0][mapped.indexOf(result)]
+  }
+  return fn(...args)
+}
+export function shortcut_sum_mean_median(fn, ...args) {
   if (args[1]) return fn(cut.Array.map(...args))
   return fn(...args)
 }

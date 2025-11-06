@@ -81,7 +81,7 @@ const lodash = {
     const fns = {
       // "Generic.is": (...args) => module[`is${args[1]?.name.replace(/./, (c) => c.toUpperCase())}`](...args),
       // "Generic.access": module.get,
-      "Generic.equal": (...args) => (args[0] instanceof Function ? args[0].toString() === args[1].toString() : module.isEqual(...args)),
+      // "Generic.equal": module.isEqual, // NOTE: Functions and DOM are not supported
       // "Generic.transform": module.transform,
       "Object.keys": module.keys,
       "Object.values": module.values,
@@ -92,28 +92,25 @@ const lodash = {
       "Object.find": module.find,
       "Object.findIndex": module.findKey,
       "Object.reduce": module.reduce,
-      "Array.map": module.map,
-      "Array.filter": module.filter,
-      "Array.find": module.find,
-      "Array.findIndex": module.findIndex,
-      "Array.reduce": module.reduce,
-      "Array.group": module.groupBy,
-      "Array.sort": module.sortBy,
+      // "Array.map": module.map,
+      // "Array.filter": module.filter,
+      // "Array.find": module.find,
+      // "Array.findIndex": module.findIndex,
+      // "Array.reduce": module.reduce,
+      // "Array.group": module.groupBy,
+      // "Array.sort": module.sortBy,
       "Array.reverse": module.reverse,
-      "Array.unique": module.uniq,
-      "Array.sum": module.sum,
-      "Array.min": module.min,
-      "Array.max": module.max,
-      "Array.mean": module.mean,
-      "Array.median": module.median,
+      "Array.unique": module.uniqBy,
+      "Array.sum": module.sumBy,
+      "Array.min": module.minBy,
+      "Array.max": module.maxBy,
+      "Array.mean": module.meanBy,
+      "Array.median": module.medianBy,
       // "Function.decorate": module.flow,
       // "Function.promisify": module.bind,
       // "Function.partial": module.partial,
       // "Function.memoize": module.memoize,
-      "String.lower": module.toLower,
-      "String.upper": module.toUpper,
-      "String.capitalize": module.capitalize,
-      "String.words": module.words,
+      // "String.words": module.words,
       "RegExp.escape": (...args) => RegExp(module.escapeRegExp(...args).slice(1, -1)),
     }
     for (const name in fns) {
@@ -267,7 +264,7 @@ const coreProto = [coreNormal, coreSetup, coreCleanup, coreWrap]
 // const registry = "https://registry.npmjs.org/"
 // const versionList = async (pkg) => Object.keys((await (await fetch(registry + pkg)).json()).versions).reverse()
 
-// NORMAL
+// // NORMAL
 // export const packages = [cutNormal]
 // export default [...testsSync, ...testsAsync, coreNormal]
 
@@ -275,6 +272,10 @@ const coreProto = [coreNormal, coreSetup, coreCleanup, coreWrap]
 // export const packages = [cutWrap]
 // export default [...testsSync, ...testsAsync, coreNormal, coreWrap]
 
-// PROTO
-export const packages = [cutProto]
-export default [...testsSync, ...testsAsync, ...coreProto]
+// // PROTO
+// export const packages = [cutProto]
+// export default [...testsSync, ...testsAsync, ...coreProto]
+
+// COMPARE
+export const packages = [cutNormal, lodash, vanilla]
+export default [...testsSync, ...testsAsync, coreNormal]

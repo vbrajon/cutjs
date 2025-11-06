@@ -174,6 +174,7 @@ bunx prettier --write .
 - utils [underscore](https://underscorejs.org/)
 - utils [sugar](https://sugarjs.com/)
 - utils [just](https://anguscroll.com/just/)
+- utils [core-js](https://core-js.io/)
 - date [date-fns](https://date-fns.org/)
 - date [moment](https://momentjs.com/)
 - date [dayjs](https://day.js.org/)

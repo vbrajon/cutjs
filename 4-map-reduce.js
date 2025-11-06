@@ -33,7 +33,7 @@ export const Array_findIndex = [].findIndex
 export function shortcut_map(fn, ...args) {
   const f = (fn) => {
     if (fn == null) return (x) => x
-    if (typeof fn === "function") return fn
+    if (fn instanceof Function) return fn
     if (fn instanceof Array) return (x) => fn.map((b) => access(x, b))
     return (x) => access(x, fn)
   }
@@ -43,7 +43,7 @@ export function shortcut_map(fn, ...args) {
 export function shortcut_filter_find_findIndex(fn, ...args) {
   const f = (fn) => {
     if (fn == null) return (x) => x
-    if (typeof fn === "function") return fn
+    if (fn instanceof Function) return fn
     if (fn instanceof RegExp) return (x) => fn.test(x)
     if (fn instanceof Array) return (x) => fn.some((v) => f(v)(x))
     if (fn instanceof Object) return (x) => Object.keys(fn).every((k) => f(fn[k])(x[k]))
