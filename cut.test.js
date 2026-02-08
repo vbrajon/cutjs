@@ -1,3 +1,10 @@
+globalThis.window = globalThis
+// process.env.TZ = "America/Santiago" // UTC-3
+// process.env.TZ = "Atlantic/Azores" // UTC-1 with DST to UTC+0
+// process.env.TZ = "Europe/Paris" // UTC+1 with DST to UTC+2
+process.env.TZ = "Asia/Karachi" // UTC+5
+
+// SYNC TESTS
 const users = [
   { name: "John Doe", age: 29 },
   { name: "Jane Doe", age: 22 },
@@ -10,8 +17,7 @@ const date = new Date("2019-01-20T10:09:08")
 const offset = ((offset = date.getTimezoneOffset()) => `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`)()
 const mixed = [false, true, (x) => x, -1, 0, Infinity, [], { a: [{ b: 1 }] }, /a/gi, null, new Date("2020"), "a", undefined]
 const mixedClone = [false, true, (x) => x, -1, 0, Infinity, [], { a: [{ b: 1 }] }, /a/gi, null, new Date("2020"), "a", undefined]
-
-export default [
+const testsSync = [
   //? Lodash _.is
   ["Generic.is", Array, [1], true],
   ["Generic.is", ArrayBuffer, new ArrayBuffer(1), true],
@@ -72,6 +78,7 @@ export default [
   ["Generic.access", { "a.b": 1 }, null, { "a.b": 1 }], // != lodash
   ["Generic.access", { "a.b": 1 }, undefined, { "a.b": 1 }], // != lodash
   ["Generic.access", { "a.b": 1 }, [], { "a.b": 1 }],
+  ["Generic.access", { a: 1 }, (obj) => obj.a, 1], //* function path
   ["Generic.access", 1, 1, undefined],
   ["Generic.access", undefined],
   ["Generic.transform", 1, (v) => v * 2, 2], //* works also with primitives
@@ -124,6 +131,8 @@ export default [
   ["Array.group", [{ a: 1, b: 2 }, { a: 1, b: 2 }], ["a", "b"], { 1: { 2: [{ a: 1, b: 2 }, { a: 1, b: 2 }] } }], // prettier-ignore
   ["Array.sort", users.map((v) => v.age), [1, 2, 0, 3].map((i) => users[i].age)],
   ["Array.sort", users.slice(), "age", [1, 2, 0, 3].map((i) => users[i])],
+  ["Array.sort", users.slice(), "-age", [3, 0, 1, 2].map((i) => users[i])], //* desc string sort
+  ["Array.sort", users.slice(), ["age", "-name"], [{ name: "Janette Doe", age: 22 }, { name: "Jane Doe", age: 22 }, { name: "John Doe", age: 29 }, { name: "Johnny Doe", age: 71, birthdate: new Date("Feb 26, 1932") }]], //* multi-sort with desc
   ["Array.sort", users.slice(), (v) => v.age, [1, 2, 0, 3].map((i) => users[i])],
   ["Array.sort", users.slice(), (a, b) => (a.age === b.age ? 0 : a.age > b.age ? 1 : -1), [1, 2, 0, 3].map((i) => users[i])],
   ["Array.sort", users.slice(), function() { return arguments[0].age === arguments[1].age ? 0 : arguments[0].age > arguments[1].age ? 1 : -1 }, [1, 2, 0, 3].map((i) => users[i])], // prettier-ignore
@@ -230,8 +239,13 @@ export default [
   },
   ["String.words", "Title Case kebab-case snake_case camelCase PascalCase 12NUM34ber56 lowerUPPERlower", ["Title", "Case", "kebab", "case", "snake", "case", "camel", "Case", "Pascal", "Case", "12", "NUM", "34", "ber", "56", "lower", "UPPERlower"]],
   ["String.format", "A.B", "lower", "a.b"],
+  ["String.format", "A.B", "lowercase", "a.b"], //* alias
   ["String.format", "a.b", "upper", "A.B"],
+  ["String.format", "a.b", "uppercase", "A.B"], //* alias
   ["String.format", "A.B", "capitalize", "A.b"],
+  ["String.format", "hello world", "cap", "Hello world"], //* alias
+  ["String.format", str, "kebab", "i-am-the-1-and-only"], //* alias
+  ["String.format", str, "snake", "i_am_the_1_and_only"], //* alias
   ["String.format", "Title Case kebab-case snake_case camelCase PascalCase 12NUM34ber56 lowerUPPERlower", "-", "title-case-kebab-case-snake-case-camel-case-pascal-case-12-num-34-ber-56-lower-upperlower"],
   ["String.format", str, "I Am The 1 And Only"], // "title" by default
   ["String.format", str, "-", "i-am-the-1-and-only"], // "dash"
@@ -302,6 +316,14 @@ export default [
   ["Number.format", NaN, "$", "-"],
   ["Number.duration", -36666666, "-10 hours"],
   ["Number.duration", 1, "1 millisecond"],
+  ["Number.duration", 1000, "1 second"],
+  ["Number.duration", 2000, "2 seconds"],
+  ["Number.duration", 60000, "1 minute"],
+  ["Number.duration", 3600000, "1 hour"],
+  ["Number.duration", 86400000, "1 day"],
+  ["Number.duration", 86400000 * 8, "1 week"],
+  ["Number.duration", 86400000 * 33, "1 month"],
+  ["Number.duration", 86400000 * 400, "1 year"],
   ["Number.duration", 0, ""],
   ["Date.format", date, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, undefined, "2019-01-20T10:09:08" + offset],
@@ -387,8 +409,14 @@ export default [
   ["Date.getWeek", new Date("2004-12-31T00:00"), 53], // Friday, Leep year
   ["Date.getWeek", new Date("2005-01-01T00:00"), 53], // Saturday
   ["Date.getWeek", new Date("2006-01-01T00:00"), 52], // Sunday
-  ["Date.getLastDate", new Date("2000-02-01T00:00"), 29],
+  ["Date.getLastDate", new Date("2001-02-01T00:00"), 28], //* non-leap year
+  ["Date.getLastDate", new Date("2000-02-01T00:00"), 29], //* leap year
+  ["Date.getLastDate", new Date("2000-04-01T00:00"), 30], //* 30-day month
+  ["Date.getLastDate", new Date("2000-01-01T00:00"), 31], //* 31-day month
+  ["Date.getQuarter", new Date("2018-01-01T00:00"), 1],
   ["Date.getQuarter", new Date("2018-04-01T00:00"), 2],
+  ["Date.getQuarter", new Date("2018-09-01T00:00"), 3],
+  ["Date.getQuarter", new Date("2018-12-01T00:00"), 4],
   ["Date.getTimezone", date, offset],
   ["Date.getTimezone", date, -540, "+09:00"],
   ["Date.setTimezone", date, offset, date],
@@ -423,16 +451,539 @@ export default [
   ["Date.plus", new Date("2020-01-31T00:00"), "1.2 month", new Date("2020-02-29T00:00")], //* Expected behavior //! DEPRECATED syntax
   ["Date.minus", new Date("2020-01-01T00:00"), "1 month", new Date("2019-12-01T00:00")],
   ["Date.minus", new Date("2020-02-29T00:00"), "1 year", new Date("2019-02-28T00:00")],
+  ["Date.minus", new Date("2020-01-01T00:00"), { days: 1 }, new Date("2019-12-31T00:00")],
+  ["Date.minus", new Date("2020-01-01T00:00"), { hours: 1 }, new Date("2019-12-31T23:00")],
+  ["Date.minus", new Date("2020-01-01T00:00"), { years: 1, months: 1 }, new Date("2018-12-01T00:00")],
+  ["Date.minus", new Date("2020-01-01T00:00"), null, new Date("2020-01-01T00:00")], //* no-op
   ["Date.minus", new Date("2018-11-30T00:00"), "-3 month", new Date("2019-02-28T00:00")], //* Subtract negative number
   ["Date.start", new Date("2018-02-28T04:05:00Z"), "month", new Date("2018-02-01T00:00")],
   ["Date.start", new Date("2020-03-31T12:00"), "month", new Date("2020-03-01T00:00")], // NOTE: daylight saving time change
+  ["Date.start", new Date("2020-06-15T14:30:00"), "year", new Date("2020-01-01T00:00")],
+  ["Date.start", new Date("2020-06-15T14:30:45"), "day", new Date("2020-06-15T00:00:00")],
+  ["Date.start", new Date("2020-06-15T14:30:45"), "hour", new Date("2020-06-15T14:00:00")],
+  ["Date.start", new Date("2020-06-15T14:30:45"), "minute", new Date("2020-06-15T14:30:00")],
+  ["Date.start", new Date("2020-06-15T14:30:45.123"), "second", new Date("2020-06-15T14:30:45.000")],
   // ["Date.start", new Date("2018-02-28T04:05:00"), "week", new Date("2018-02-25T00:00")], // NOTE: start on sunday or monday
   ["Date.end", new Date("2016-02-29T10:11:12Z"), "year", new Date("2016-12-31T23:59:59.999")],
+  ["Date.end", new Date("2020-06-15T10:00:00"), "month", new Date("2020-06-30T23:59:59.999")],
+  ["Date.end", new Date("2020-06-15T14:30:00"), "day", new Date("2020-06-15T23:59:59.999")],
+  ["Date.end", new Date("2020-06-15T14:30:00"), "hour", new Date("2020-06-15T14:59:59.999")],
+  ["Date.end", new Date("2020-06-15T14:30:00"), "minute", new Date("2020-06-15T14:30:59.999")],
   ["Date.relative", date, date, ""],
   ["Date.relative", new Date(+date - 1000), date, "1 second ago"], //* 1 second before
   ["Date.relative", new Date(+date + 2 * 60 * 60 * 1000), date, "2 hours from now"], //* 2 hours after
+  ["Date.relative", new Date(+date - 60000), date, "1 minute ago"],
+  ["Date.relative", new Date(+date - 86400000 * 3), date, "3 days ago"],
+  ["Date.relative", new Date(+date + 86400000 * 400), date, "1 year from now"],
   ["RegExp.escape", /john@gmail.com/, /john@gmail\.com/],
+  ["RegExp.escape", /a$b(c)+d?e/, /a\$b\(c\)\+d\?e/],
   ["RegExp.replace", /john@gmail.com/, "@", "|", /john|gmail.com/],
   ["RegExp.plus", /QwErTy/msvy, "gim", /QwErTy/gimsvy],
+  ["RegExp.plus", /abc/, "gi", /abc/gi],
+  ["RegExp.plus", /abc/g, "g", /abc/g], //* duplicate flag is no-op
   ["RegExp.minus", /QwErTy/i, "gi", /QwErTy/],
+  ["RegExp.minus", /abc/, "g", /abc/], //* removing non-existent flag is no-op
+  ["RegExp.minus", /abc/gim, "gim", /abc/],
 ]
+// ASYNC TESTS
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const testsAsync = [
+  {
+    name: "Function.wait",
+    fn: async ({ wait }) => {
+      const start = Date.now()
+      const n = await wait(() => 1, 100)
+      if (Date.now() - start < 100) throw new Error("Function.wait should wait 100ms")
+      if (n !== 1) throw new Error("Function.wait should resolve the function and return 1")
+    },
+  },
+  {
+    name: "Function.every - limit",
+    fn: async ({ every }) => {
+      let n = 0
+      const loop = every(() => n++, 100, 3) // immediate + runs every 100ms + stops after 3 times
+      if (n !== 1) throw new Error(`Function.every should have been called immediately, n = ${n}`)
+      await loop
+      // if (n !== 2) throw new Error(`Function.every should yield next result and be called 2 times, n = ${n}`)
+      // await loop
+      // if (n !== 3) throw new Error(`Function.every should have been called 3 times, n = ${n}`)
+      // await loop // should not hang
+      // if (n !== 3) throw new Error(`Function.every should have been called 3 times, n = ${n}`)
+    },
+  },
+  {
+    name: "Function.every - stop",
+    fn: async ({ every }) => {
+      let n = 0
+      const loop = every(() => n++, 100)
+      await sleep(280) // immediate + runs every 100ms + stops after 280ms
+      loop.stop()
+      if (n !== 3) throw new Error(`Function.every should have been called 3 times, n = ${n}`)
+    },
+  },
+  {
+    name: "Function.debounce",
+    fn: async ({ debounce }) => {
+      let n = 0
+      const inc = debounce((x) => (n += x), 100)
+      inc(1) // skipped
+      inc(2) // skipped
+      inc(3) // delayed
+      if (n !== 0) throw new Error(`Function.debounce should wait before calling the fn, n = ${n}`)
+      await sleep(100)
+      if (n !== 3) throw new Error(`Function.debounce should call the fn after 100ms, n = ${n}`)
+    },
+  },
+  {
+    name: "Function.throttle",
+    fn: async ({ throttle }) => {
+      let n = 0
+      const inc = throttle((x) => (n += x), 100)
+      inc(1) // immediate
+      inc(2) // skipped
+      inc(3) // planned
+      if (n !== 1) throw new Error(`Function.throttle should call immediatly the fn, n = ${n}`)
+      await sleep(100)
+      if (n !== 4) throw new Error(`Function.throttle should have called the next fn after 100ms, n = ${n}`)
+    },
+  },
+  // {
+  //   name: "Promise.map",
+  //   fn: async (fn) => {
+  //     let n = 0
+  //     const inc = (x) => new Promise((resolve) => setTimeout(() => resolve((n += x)), 100))
+
+  //     const all = await Promise.all([1, 2].map(inc))
+  //     if (n !== 3) throw new Error(`Promise.all should be awaitable, n = ${n}`)
+  //     if (all.length !== 2) throw new Error(`Promise.all should return 2 elements`)
+  //     n = 0
+
+  //     const map = await fn([1, 2], inc)
+  //     if (n !== 3) throw new Error(`Promise.map should be awaitable, n = ${n}`)
+  //     if (map.length !== 2) throw new Error(`Promise.map should return 2 elements`)
+  //     n = 0
+
+  //     fn([1, 2], inc)
+  //     if (n !== 0) throw new Error(`Promise.map should start the first promise, n = ${n}`)
+  //     await sleep(120)
+  //     if (n !== 1) throw new Error(`Promise.map should start the second promise, n = ${n}`)
+  //     await sleep(120)
+  //     if (n !== 3) throw new Error(`Promise.map should be done, n = ${n}`)
+  //   },
+  // },
+]
+// CORE TESTS
+const cutNormal = {
+  name: "cut",
+  versions: ["latest"],
+  import: async (version) => {
+    const module = await import("./cut")
+    const cut = module
+    const fns = {}
+    for (const fname in cut) {
+      for (const cname in cut[fname]) {
+        fns[fname] = fns[`Generic.${fname}`] = fns[`${cname}.${fname}`] = cut[fname]
+        // fns[`${cname}.${fname}`] = cut[fname][cname] // INTERNAL METHODS
+      }
+    }
+    return fns
+  },
+}
+const cutProto = {
+  name: "cut-proto",
+  versions: ["latest"],
+  import: async (version) => {
+    await import("./cut?proto")
+    const fns = {}
+    for (const fname in cut) {
+      for (const cname in cut[fname]) {
+        const fn = (x, ...args) => {
+          if (x && x[fname]) return x[fname](...args)
+          return cut[fname](x, ...args)
+        }
+        fns[fname] = fns[`Generic.${fname}`] = fns[`${cname}.${fname}`] = fn
+      }
+    }
+    fns.proto = {}
+    return fns
+  },
+}
+const vanilla = {
+  name: "vanilla",
+  versions: ["es2022"],
+  import: async (version) => {
+    const { Temporal } = await import("@js-temporal/polyfill")
+    return {
+      "Object.map": (obj, fn) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, fn(v, k, obj)])),
+      "Object.filter": (obj, fn) => Object.fromEntries(Object.entries(obj).filter(([k, v]) => fn(v, k, obj))),
+      "Object.find": (obj, fn) => obj[Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks))],
+      "Object.findIndex": (obj, fn) => Object.keys(obj).find((k, i, ks) => fn(obj[k], k, obj, i, ks)),
+      "Date.getWeek": (date) => Temporal.PlainDate.from({ year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }).weekOfYear,
+    }
+  },
+}
+const lodash = {
+  name: "lodash-es",
+  // versions: (await versionList("lodash-es"))
+  //   .filter((v) => v.startsWith("4"))
+  //   .reverse()
+  //   .slice(-1)
+  //   .reverse(),
+  versions: ["4.17.21"],
+  import: async (version) => {
+    const module = await import("lodash-es")
+    const fns = {
+      // "Generic.is": (...args) => module[`is${args[1]?.name.replace(/./, (c) => c.toUpperCase())}`](...args),
+      // "Generic.access": module.get,
+      // "Generic.equal": module.isEqual, // NOTE: Functions and DOM are not supported
+      // "Generic.transform": module.transform,
+      "Object.keys": module.keys,
+      "Object.values": module.values,
+      "Object.entries": module.toPairs,
+      "Object.fromEntries": module.fromPairs,
+      "Object.map": (...args) => (args[0].constructor === Object ? module.mapValues(...args) : module.map(...args)),
+      "Object.filter": (...args) => (args[0].constructor === Object ? module.pickBy(...args) : module.filter(...args)),
+      "Object.find": module.find,
+      "Object.findIndex": module.findKey,
+      "Object.reduce": module.reduce,
+      // "Array.map": module.map,
+      // "Array.filter": module.filter,
+      // "Array.find": module.find,
+      // "Array.findIndex": module.findIndex,
+      // "Array.reduce": module.reduce,
+      // "Array.group": module.groupBy,
+      // "Array.sort": module.sortBy,
+      "Array.reverse": module.reverse,
+      "Array.unique": module.uniqBy,
+      "Array.sum": module.sumBy,
+      "Array.min": module.minBy,
+      "Array.max": module.maxBy,
+      "Array.mean": module.meanBy,
+      "Array.median": module.medianBy,
+      // "Function.decorate": module.flow,
+      // "Function.promisify": module.bind,
+      // "Function.partial": module.partial,
+      // "Function.memoize": module.memoize,
+      // "String.words": module.words,
+      "RegExp.escape": (...args) => RegExp(module.escapeRegExp(...args).slice(1, -1)),
+    }
+    for (const name in fns) {
+      const [cname, fname] = name.split(".")
+      fns[fname] = fns[name]
+    }
+    return fns
+  },
+}
+const testNormal = {
+  name: "proto - noMutation",
+  fn: (cut) => {
+    // DEFAULT BEHAVIOR
+    const a = [3, 1, 2]
+    a.reverse()
+    if (a[0] === 3) throw new Error("Array.reverse should mutate the array")
+    a.reverse()
+
+    // SETUP
+    cut.reverse = { Array: [].reverse, shortcut: (fn, arr) => fn(arr.slice()) }
+
+    // UPDATED BEHAVIOR
+    a.reverse()
+    if (a[0] !== 3) throw new Error("Array.reverse should not mutate the array")
+
+    // CLEANUP
+    delete cut.reverse
+    if (cut.reverse) throw new Error("cut.reverse still exists")
+    if (cut.Array.reverse) throw new Error("cut.Array.reverse still exists")
+    if (cut.shortcuts.reverse) throw new Error("cut.shortcuts.reverse still exists")
+
+    // DEFAULT BEHAVIOR
+    a.reverse()
+    if (a[0] === 3) throw new Error("Array.reverse should mutate the array")
+    a.reverse()
+  },
+}
+const testWrap = {
+  name: "proto - wrap",
+  fn: () => {
+    const initial = { a: 1 }
+    // 1. Wrap
+    {
+      const { data, error } = cut(initial).map((v) => v + 1).a
+      if (data !== 2) throw new Error("Data not 2")
+      if (error) throw new Error("Error thrown")
+    }
+
+    // 2. Wrap with error
+    {
+      const { data, error } = cut(initial).a.b.c
+      if (data) throw new Error("Data with error")
+      if (!error) throw new Error("Error not thrown")
+    }
+
+    // 3. Wrap and access path
+    const wrap = cut(initial)
+    if (wrap.path[0] !== initial) throw new Error("Path not valid")
+    wrap.map((v) => v + 1)
+    if (wrap.path.length !== 2) throw new Error("Path not valid")
+    wrap.a.b.c
+    if (wrap.path.length !== 5) throw new Error("Path not valid")
+    const { data, error } = wrap
+    if (wrap.path.length !== 5) throw new Error("Path not valid")
+    if (!error) throw new Error("Error not thrown") // undefined is not an object (evaluating 'data[p]')
+    if (data) throw new Error("Data with error")
+
+    // 4. Careful, it throws once .data or .error are accessed
+    let err
+    try {
+      wrap.a.b // throws
+    } catch (e) {
+      err = e
+    }
+    if (!err) throw new Error("Throws once .data or .error are accessed")
+  },
+}
+const testSetup = {
+  name: "proto - setup",
+  fn: () => {
+    // cut.Object.fake = 1 / 3
+    // cut.shortcuts.fake = (x) => Math.round(x * 100)
+    if (cut.mode !== "proto") throw new Error("cut.mode is not proto")
+    cut("shortcut", "fake", (x) => Math.round(x * 100))
+    cut(Number, "fake", 1 / 3)
+    if ((0.1).fake() !== 33) throw new Error("Number.fake result is not 33 " + (0.1).fake())
+    cut(Number, "fake", undefined)
+    cut("shortcut", "fake", undefined)
+    if (Number.fake) throw new Error("Number.fake still exists")
+    if (Number.prototype.fake) throw new Error("Number.prototype.fake still exists")
+    if (cut.fake) throw new Error("cut.fake still exists")
+    if (cut.Number.fake) throw new Error("cut.Number.fake still exists")
+    if (cut.shortcuts.fake) throw new Error("cut.shortcuts.fake still exists")
+
+    cut(Array, "transpose", (arr) => arr[0].map((_, i) => arr.map((row) => row[i])))
+    cut("shortcut", "transpose", (fn, arr) => {
+      if (arr.some((row) => row.length !== arr[0].length)) throw new Error("Not a matrix")
+      return fn(arr)
+    })
+    // Alias swap <> transpose
+    cut(Array, "swap", cut.Array.transpose)
+    const matrix = [
+      [1, 2, 3],
+      [4, 5, 6],
+    ]
+    let error
+    try {
+      cut.transpose(matrix.concat([[7, 2]]))
+    } catch (e) {
+      error = e
+    }
+    if (!error || error.message !== "Not a matrix") throw new Error("Matrix error not thrown") // "Not a matrix"
+    if (cut.swap(matrix).length !== 3) throw new Error("Matrix not transposed") // [[1, 4], [2, 5], [3, 6]]
+  },
+}
+const testCleanup = {
+  name: "proto - cleanup",
+  fn: () => {
+    for (let property in { a: 1 }) if (property !== "a") throw new Error(`Enumerable property ${property} still exists`)
+    // if (Number.abs !== Math.abs) throw new Error("Number.abs !== Math.abs")
+    cut("mode", "normal")
+    if (Object.prototype.keys) throw new Error("Object.prototype.keys still exists")
+    if (Object.prototype.map) throw new Error("Object.prototype.map still exists")
+    if (Array.prototype._map) throw new Error("Array.prototype._map still exists")
+    if (Array.map) throw new Error("Array.map still exists")
+    if (Number.abs) throw new Error("Number.abs still exists")
+    let error
+    try {
+      cut.format(1.23456789)
+      cut.format("hello world")
+      cut.format(new Date())
+      cut.format(/1/)
+    } catch (e) {
+      error = e
+    }
+    if (!error || error.message !== "format does not exist on RegExp") throw new Error("cut.format does not throw on RegExp")
+    const a = [3, 1, 2]
+    cut("shortcut", "reverse", (fn, arr) => fn(arr.slice()))
+    cut(Array, "reverse", [].reverse)
+    cut.reverse(a)
+    if (a[0] !== 3) throw new Error("cut.reverse should not mutate the array")
+    a.reverse()
+    if (a[0] === 3) throw new Error("Array.reverse should mutate the array")
+  },
+}
+const testsProto = [testNormal, testSetup, testCleanup, testWrap]
+
+// const registry = "https://registry.npmjs.org/"
+// const versionList = async (pkg) => Object.keys((await (await fetch(registry + pkg)).json()).versions).reverse()
+
+// NORMAL
+const packages = [cutNormal, lodash, vanilla]
+const tests = [...testsSync, ...testsAsync]
+
+// // PROTO
+// const packages = [cutProto, lodash, vanilla]
+// const tests = [...testsSync, ...testsAsync, ...testsProto]
+
+// TEST RUNNER
+import { test, expect } from "bun:test"
+
+let name
+let i = 0
+// for (const file of files) {
+//   const { packages, default: tests } = await import("./" + file)
+for (const pkg of packages) {
+  for (const version of pkg.versions) {
+    const module = await pkg.import(version)
+    for (const t of tests) {
+      if (t instanceof Array) {
+        i = name !== t[0] ? 1 : i + 1
+        name = t[0].split(" - ")[0]
+        const fn = module[name]
+        if (!fn) continue // test.skip
+        test(`${pkg.name} ${t[0]} #${i}`, async () => {
+          const result = await fn(...t.slice(1, -1))
+          expect(result).toEqual(t.at(-1))
+        })
+      } else {
+        i = name !== t.name ? 1 : i + 1
+        name = t.name.split(" - ")[0]
+        const fn = module[name]
+        if (!fn) continue // test.skip
+        test(`${pkg.name} ${t.name} #${i}`, async () => {
+          const result = await t.fn(module)
+          expect(result).toEqual(t.output)
+        })
+      }
+    }
+  }
+}
+// }
+
+// PROPERTY TESTS
+// import { test, expect } from "bun:test"
+import fc from "fast-check"
+import { access, equal, is, format, parse } from "./cut.js"
+import { isEqual } from "lodash-es"
+
+// fc.configureGlobal({ numRuns: 5000 })
+
+const any = fc.anything({
+  withBigInt: true,
+  withBoxedValues: true,
+  withDate: true,
+  withMap: true,
+  withNullPrototype: true,
+  withObjectString: true,
+  withSet: true,
+  withTypedArray: true,
+  withSparseArray: true,
+  withUnicodeString: true,
+})
+
+// Throw only if the property fails
+function assert(...args) {
+  const fn = args.at(-1)
+  const property = fc.property(...args.slice(0, -1), (...inner) => (fn(...inner), true))
+  fc.assert(property)
+}
+// Throw if the property fails or returns falsy
+function assertTrue(...args) {
+  fc.assert(fc.property(...args))
+}
+function assertAsync(...args) {
+  fc.assert(fc.asyncProperty(...args))
+}
+function assertThrows(...args) {
+  const fn = args.at(-1)
+  const property = fc.property(...args.slice(0, -1), (...inner) => {
+    let threw = false
+    try {
+      fn(...inner)
+    } catch (e) {
+      threw = true
+    }
+    if (!threw) throw new Error("Did not throw")
+  })
+  fc.assert(property)
+}
+
+test("access does not throw for any properties", () => {
+  access({}, { toString: null })
+  access({}, [{ toString: null }])
+  assert(any, any, (a, b) => access(a, b))
+})
+
+test("equal is always true for clones", () => {
+  assertTrue(fc.clone(any, 2), ([a, b]) => equal(a, b))
+})
+
+const _any = fc.anything({
+  withBigInt: true,
+  withBoxedValues: true,
+  withDate: true,
+  // withMap: true,
+  // withNullPrototype: true,
+  withObjectString: true,
+  // withSet: true,
+  withTypedArray: true,
+  // withSparseArray: true,
+  withUnicodeString: true,
+})
+test("equal is similar to lodash.isEqual", () => {
+  if (!equal([{ __proto__: null }], [{ __proto__: null }])) throw "x"
+  if (equal({ __proto__: null }, {})) throw "x" // != lodash
+  if (equal({ "": undefined }, { a: undefined })) throw "x"
+  // if (equal([], [,])) throw "x"
+  // if (equal(new Map([["a", 1]]), new Map([["b", 2]]))) throw "x"
+  assert(_any, _any, (a, b) => {
+    if (equal(a, b) !== isEqual(a, b)) throw new Error("Not similar to lodash isEqual")
+  })
+})
+
+test("is does not throw for any properties", () => {
+  is(0n, null)
+  is({ __proto__: null }, null)
+  assert(any, any, (a, b) => {
+    is(a)
+    is(a, b)
+  })
+})
+
+test("is is always true for clones", () => {
+  assertTrue(fc.clone(any, 2), ([a, b]) => is(a) === is(b))
+})
+
+test("is returns the correct type", () => {
+  // if (!is(BigInt, 0n)) throw "x" // TODO: the reverse works is(0n, BigInt)
+  assert(fc.bigInt(), (a) => is(a, BigInt))
+  assert(fc.boolean(), (a) => is(a, Boolean))
+  assert(fc.date(), (a) => is(a, Date))
+  assert(fc.float(), (a) => is(a, Number))
+  assert(fc.string(), (a) => is(a, String))
+  assert(fc.tuple(), (a) => is(a, Array))
+  assert(fc.func(fc.nat()), (a) => is(a, Function)) // NOTE: does not work with fc.func()
+  assert(fc.infiniteStream(), (a) => is(a, Iterator))
+  assertAsync(fc.infiniteStream(), async (a) => is(a) === "Iterator") // TODO: fix is(a, Iterator)
+  assert(fc.object(), (a) => is(a, Object))
+  assert(fc.int8Array(), (a) => is(a, Int8Array))
+})
+
+test("format does not throw for any String, Number or Date", () => {
+  // format(0n) // TODO: BigInt, cut.Number.format supports it but cut.format does not
+  const strnumdate = fc.oneof(fc.string(), fc.float(), fc.date(), fc.bigInt())
+  assert(strnumdate, (a) => format(a))
+})
+
+test("format throw for anything else than String, Number or Date", () => {
+  const notstrnumdate = any.filter((a) => ![String, Number, BigInt, Date].includes(a?.constructor))
+  assertThrows(notstrnumdate, (a) => format(a))
+})
+
+test("format always returns a string", () => {
+  const strnumdate = fc.oneof(fc.string(), fc.float(), fc.date(), fc.bigInt())
+  assertTrue(strnumdate, (a) => typeof format(a) === "string")
+})
+
+test("parse does not throw for any String", () => {
+  const d = new Date()
+  assert(fc.string(), (a) => parse(d, a))
+})
