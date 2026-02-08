@@ -67,8 +67,9 @@ function stringify(v) {
 // PROPERTY TESTS
 // import { test, expect } from "bun:test"
 import fc from "fast-check"
-import { access, equal, is, format, parse } from "./cut.js"
+import cut from "./cut.js"
 import { isEqual } from "lodash-es"
+const { access, equal, is, format, parse } = cut
 
 // fc.configureGlobal({ numRuns: 5000 })
 
@@ -119,7 +120,7 @@ test("access does not throw for any properties", () => {
 })
 
 test("equal is always true for clones", () => {
-  assertTrue(fc.clone(any, 2), ([a, b]) => equal(a, b))
+  assertTrue(fc.clone(any, 2), ([a, b]) => equal(a, b) && equal(b, a))
 })
 
 const _any = fc.anything({
@@ -148,9 +149,10 @@ test("equal is similar to lodash.isEqual", () => {
 test("is does not throw for any properties", () => {
   is(0n, null)
   is({ __proto__: null }, null)
+  is(undefined, { __proto__: null })
   assert(any, any, (a, b) => {
-    is(a)
-    is(a, b)
+    if ((is(a) === is(b)) !== is(a, b)) throw new Error("(is(a) === is(b)) !== is(a, b)")
+    if (is(a, b) !== is(b, a)) throw new Error("is(a, b) !== is(b, a)")
   })
 })
 
@@ -159,22 +161,21 @@ test("is is always true for clones", () => {
 })
 
 test("is returns the correct type", () => {
-  // if (!is(BigInt, 0n)) throw "x" // TODO: the reverse works is(0n, BigInt)
-  assert(fc.bigInt(), (a) => is(a, BigInt))
-  assert(fc.boolean(), (a) => is(a, Boolean))
-  assert(fc.date(), (a) => is(a, Date))
-  assert(fc.float(), (a) => is(a, Number))
-  assert(fc.string(), (a) => is(a, String))
-  assert(fc.tuple(), (a) => is(a, Array))
-  assert(fc.func(fc.nat()), (a) => is(a, Function)) // NOTE: does not work with fc.func()
-  assert(fc.infiniteStream(), (a) => is(a, Iterator))
-  assertAsync(fc.infiniteStream(), async (a) => is(a) === "Iterator") // TODO: fix is(a, Iterator)
-  assert(fc.object(), (a) => is(a, Object))
-  assert(fc.int8Array(), (a) => is(a, Int8Array))
+  if (!is(BigInt, 0n)) throw "x"
+  assert(fc.bigInt(), (a) => is(BigInt, a))
+  assert(fc.boolean(), (a) => is(Boolean, a))
+  assert(fc.date(), (a) => is(Date, a))
+  assert(fc.float(), (a) => is(Number, a))
+  assert(fc.string(), (a) => is(String, a))
+  assert(fc.tuple(), (a) => is(Array, a))
+  assert(fc.func(fc.nat()), (a) => is(Function, a)) // NOTE: does not work with fc.func()
+  assert(fc.infiniteStream(), (a) => is(Iterator, a))
+  assertAsync(fc.infiniteStream(), async (a) => is(Iterator, a))
+  assert(fc.object(), (a) => is(Object, a))
+  assert(fc.int8Array(), (a) => is(Int8Array, a))
 })
 
 test("format does not throw for any String, Number or Date", () => {
-  // format(0n) // TODO: BigInt, cut.Number.format supports it but cut.format does not
   const strnumdate = fc.oneof(fc.string(), fc.float(), fc.date(), fc.bigInt())
   assert(strnumdate, (a) => format(a))
 })

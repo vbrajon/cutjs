@@ -58,11 +58,11 @@ export function is(a, b) {
   if (arguments.length === 1) {
     if (Number.isNaN(a)) return "NaN"
     if (!a || !a.constructor) return Object.prototype.toString.call(a).slice(8, -1)
-    if (a[Symbol.iterator] || a[Symbol.asyncIterator]) return "Iterator"
+    if (a[Symbol.asyncIterator] || (a[Symbol.iterator] && (a.constructor === Object || typeof a.next === "function"))) return "Iterator"
+    if (a instanceof Function) return (window[a.name] === a && a.name) || "Function"
     return a.constructor.name
   }
-  if (!b) return a === b || is(a) === is(b)
-  return a?.constructor === b || b?.constructor === a
+  return is(a) === is(b)
 }
 access.dotpath = Function_memoize((str) => str.split(/(?:\.|\[["']?([^\]"']*)["']?\])/).filter((x) => x))
 export function Function_decorate(fn, wrapper) {

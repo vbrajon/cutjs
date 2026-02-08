@@ -16,17 +16,17 @@ const testsSync = [
   ["Generic.is", Array, [1], true],
   ["Generic.is", ArrayBuffer, new ArrayBuffer(1), true],
   ["Generic.is", Boolean, true, true],
-  // ["Generic.is", Buffer, new Buffer(1), true],
+  // ["Generic.is", Buffer, new Buffer(1), true], // NOTE: This test do not work in browser
   ["Generic.is", Date, new Date(), true],
   ["Generic.is", Error, new Error(), true],
   ["Generic.is", Function, () => 1, true],
-  // ["Generic.is", Iterator, { [Symbol.iterator]() {} }, true], // TODO: fix
+  // ["Generic.is", Iterator, { [Symbol.iterator]() {} }, true], // NOTE: This test do not work in browser
   ["Generic.is", Map, new Map(), true],
   ["Generic.is", NaN, NaN, true],
   ["Generic.is", null, null, true],
   ["Generic.is", Number, 1, true],
-  ["Generic.is", 0n, BigInt, true], // TODO: the reverse is(0n, BigInt) works and is(BigInt, 1n) works
-  ["Generic.is", {}, Object, true], // TODO: the reverse is({}, Object) works and is(Object, {}) works in chrome and safari
+  ["Generic.is", BigInt, 0n, true],
+  ["Generic.is", Object, {}, true],
   ["Generic.is", RegExp, /1/, true],
   ["Generic.is", Set, new Set(), true],
   ["Generic.is", String, "str", true],
@@ -42,11 +42,13 @@ const testsSync = [
   ["Generic.is", 0n, "BigInt"],
   ["Generic.is", Infinity, "Number"],
   ["Generic.is", () => 1, "Function"],
-  ["Generic.is", { [Symbol.iterator]() {} }, "Iterator"],
+  ["Generic.is", Iterator, "Iterator"],
   // { name: "Generic.is", fuzz: true, errors: [] },
+  ["Generic.is", Function, function a() {}, true],
+  ["Generic.is", { [Symbol.iterator]() {} }, "Iterator"],
   ["Generic.is", void 0, undefined, true],
   ["Generic.is", NaN, NaN, true],
-  ["Generic.is", NaN, Number, true], //! NaN is also a Number
+  ["Generic.is", NaN, Number, false], //! NaN is "NaN", not "Number"
   ["Generic.is", 1, NaN, false],
   //? Lodash _.isEqual
   ["Generic.equal", [null, null], [null, undefined], false],
