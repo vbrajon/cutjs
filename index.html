@@ -21,7 +21,7 @@
 <script type="module">
   import { codeToHtml } from "https://esm.sh/shiki"
   import cut from "./cut.js?proto"
-  import tests from "./test-core.js"
+  import { tests } from "./cutest.js"
   function generate(hash) {
     if (!hash) return EXEMPLE
     const imp = `import { ${Object.keys(cut.by.constructor[hash] || {}).join(", ")} } from "cutjs"`

@@ -1,18 +1,36 @@
-// cutjs v2026.02.08
+/*! cutjs v2026.02.08 | MIT | github.com/vbrajon/cutjs */
 export const CURRENCIES = Intl.supportedValuesOf("currency").reduce((acc, k) => ((acc[new Intl.NumberFormat("en", { style: "currency", currency: k }).format(0).split(/\s?0/)[0]] = acc[k] = k), acc), {})
 export const TIMES = [
-  ["millisecond", 1, "S", "Milliseconds", 3],
-  ["second", 1000, "s", "Seconds"],
-  ["minute", 1000 * 60, "m", "Minutes"],
-  ["hour", 1000 * 60 * 60, "h", "Hours"],
-  ["day", 1000 * 60 * 60 * 24, "D", "Date"],
-  ["week", 1000 * 60 * 60 * 24 * 7, "W", "Week"],
-  ["month", 1000 * 60 * 60 * 24 * 30, "M", "Month"],
-  ["quarter", 1000 * 60 * 60 * 24 * 30 * 3, "Q", "Quarter"],
-  ["year", 1000 * 60 * 60 * 24 * 365, "Y", "FullYear", 4],
-  ["timezone", null, "Z", "Timezone"],
+  { name: "millisecond", ms: 1, token: "S", getter: "Milliseconds", pad: 3, aliases: ["ms", "msec", "msecs"] },
+  { name: "second", ms: 1000, token: "s", getter: "Seconds", pad: 2, aliases: ["s", "sec", "secs"] },
+  { name: "minute", ms: 1000 * 60, token: "m", getter: "Minutes", pad: 2, aliases: ["m", "min", "mins"] },
+  { name: "hour", ms: 1000 * 60 * 60, token: "h", getter: "Hours", pad: 2, aliases: ["h", "hr", "hrs"] },
+  { name: "day", ms: 1000 * 60 * 60 * 24, token: "D", getter: "Date", pad: 2, aliases: ["d"] },
+  { name: "week", ms: 1000 * 60 * 60 * 24 * 7, token: "W", getter: "Week", pad: 2, aliases: ["w"] },
+  { name: "month", ms: 1000 * 60 * 60 * 24 * 30, token: "M", getter: "Month", pad: 2, aliases: ["mo"] },
+  { name: "quarter", ms: 1000 * 60 * 60 * 24 * 30 * 3, token: "Q", getter: "Quarter", pad: 2, aliases: ["q"] },
+  { name: "year", ms: 1000 * 60 * 60 * 24 * 365, token: "Y", getter: "FullYear", pad: 4, aliases: ["y", "yr", "yrs"] },
+  { name: "timezone", ms: null, token: "Z", getter: "Timezone" },
 ]
-TIMES.forEach(([k, v]) => (TIMES[k.toUpperCase()] = v))
+const units = TIMES.filter((t) => ["millisecond", "second", "minute", "hour", "day", "month", "year"].includes(t.name))
+TIMES.forEach((t) => {
+  TIMES[t.name.toUpperCase()] = t.ms
+  t["+"] = (d, n) => d[`set${t.getter}`](d[`get${t.getter}`]() + n)
+  t["-"] = (d, n) => d[`set${t.getter}`](d[`get${t.getter}`]() - n)
+  t["<"] = (d) => units.slice(0, units.indexOf(t)).map((unit) => d[`set${unit.getter}`](unit.getter === "Date" ? 1 : 0))
+  t[">"] = (d) =>
+    units
+      .slice(0, units.indexOf(t))
+      .reverse()
+      .map((unit) => d[`set${unit.getter}`]({ Month: 11, Date: Date_getLastDate(d), Hours: 23, Minutes: 59, Seconds: 59, Milliseconds: 999 }[unit.getter]))
+})
+const DURATION_UNITS = Object.fromEntries(TIMES.flatMap((t) => (t.ms ? [[t.name, t.ms], [t.name + "s", t.ms], ...t.aliases.map((a) => [a, t.ms])] : [])))
+const DURATION_REGEX = RegExp(
+  `^(-?\\d*\\.?\\d+)\\s*(${Object.keys(DURATION_UNITS)
+    .sort((a, b) => b.length - a.length)
+    .join("|")})?`,
+  "i",
+)
 export const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
 export const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 export const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi
@@ -148,25 +166,34 @@ export function Date_format(date, format, locale = "en") {
     if (parts.includes("second")) options.second = "2-digit"
     return date.toLocaleString(locale, options)
   }
-  return TIMES.reduce((str, [unit, ms, letter, fn, zeros = 2]) => {
-    return str.replace(RegExp(`${letter}+`, "g"), (m) => {
-      if (letter === "Z") return Date_getTimezone(date)
-      if (letter === "W") return `W${Date_getWeek(date)}`
-      if (letter === "Q") return `Q${Date_getQuarter(date)}`
-      let int = date[`get${fn}`]()
-      if (letter === "M") int = int + 1
-      if (m.length > zeros) return ("0".repeat(zeros) + int).slice(-zeros) + letter
+  return TIMES.reduce((str, { token, getter, pad = 2 }) => {
+    return str.replace(RegExp(`${token}+`, "g"), (m) => {
+      if (token === "Z") return Date_getTimezone(date)
+      if (token === "W") return `W${Date_getWeek(date)}`
+      if (token === "Q") return `Q${Date_getQuarter(date)}`
+      let int = date[`get${getter}`]()
+      if (token === "M") int = int + 1
+      if (m.length > pad) return ("0".repeat(pad) + int).slice(-pad) + token
       if (m.length < `${int}`.length) return int
-      return ("0".repeat(zeros) + int).slice(-m.length)
+      return ("0".repeat(pad) + int).slice(-m.length)
     })
   }, format)
 }
 // Parse & Modify Date
-export function Number_duration(num) {
+export function Number_duration(num, format) {
   if (!num) return ""
   const units = TIMES.slice().reverse()
-  const [k, v] = units.find(([k, v]) => v && v <= Math.abs(num) * 1.1)
-  return `${Math.round(+num / +v)} ${k}${Math.abs(Math.round(+num / +v)) > 1 ? "s" : ""}`
+  const unit = units.find((t) => t.ms && t.ms <= Math.abs(num) * 1.1)
+  const n = Math.round(+num / +unit.ms)
+  if (format === "short") return `${n}${unit.aliases[0]}`
+  return `${n} ${unit.name}${Math.abs(n) > 1 ? "s" : ""}`
+}
+export function String_duration(str) {
+  const match = DURATION_REGEX.exec(str)
+  if (!match) return NaN
+  const n = +match[1]
+  const unit = (match[2] || "ms").toLowerCase()
+  return n * (DURATION_UNITS[unit] ?? NaN)
 }
 export function Date_relative(from, to = new Date()) {
   return Number_duration(+from - +to).replace(/^-?(.+)/, (m, d) => d + (m[0] === "-" ? " ago" : " from now"))
@@ -186,31 +213,14 @@ export function Date_modify(date, options, sign) {
   if (!options || !sign) return date
   if (typeof options === "string") {
     options = { str: options }
-    options.str.replace(/([+-.\d]*)\s*(millisecond|second|minute|hour|day|week|month|quarter|year)/gi, (m, n, u) => (options[`${u}s`] = +n || 1 - +(n === "0")))
+    options.str.replace(RegExp(`([+-.\\d]*)\\s*(${TIMES.flatMap((t) => (t.ms ? [t.name] : [])).join("|")})`, "gi"), (m, n, u) => (options[`${u}s`] = +n || 1 - +(n === "0")))
   }
   if (options.weeks) options.days = options.days || 0 + options.weeks * 7
   if (options.quarters) options.months = options.months || 0 + options.quarters * 3
   Object.keys(options).forEach((k) => (options[k] = Math.round(+options[k]) || options[k]))
   const d = new Date(date)
-  const units = TIMES.filter((unit) => ["millisecond", "second", "minute", "hour", "day", "month", "year"].includes(unit[0]))
-  const fn = {
-    "+": (unit, n) => d[`set${unit[3]}`](d[`get${unit[3]}`]() + n),
-    "-": (unit, n) => d[`set${unit[3]}`](d[`get${unit[3]}`]() - n),
-    "<"(unit) {
-      const index = units.findIndex((u) => u === unit)
-      return units.slice(0, index).map((unit) => d[`set${unit[3]}`](unit[3] === "Date" ? 1 : 0))
-    },
-    ">"(unit) {
-      const index = units.findIndex((u) => u === unit)
-      units
-        .slice(0, index)
-        .reverse()
-        .map((unit) => d[`set${unit[3]}`]({ Month: 11, Date: Date_getLastDate(d), Hours: 23, Minutes: 59, Seconds: 59, Milliseconds: 999 }[unit[3]]))
-    },
-  }[sign]
-  units.forEach((unit) => options[`${unit[0]}s`] && fn(unit, options[`${unit[0]}s`]))
+  units.forEach((unit) => options[`${unit.name}s`] && unit[sign](d, options[`${unit.name}s`]))
   if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[`${k}s`]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[`${k}s`])) d.setDate(0)
-  if (["-", "+"].includes(sign) && date.getTimezoneOffset() !== d.getTimezoneOffset()) d.setTime(+d + (date.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000)
   return d
 }
 export function Date_plus(date, options) {
@@ -430,7 +440,7 @@ export function shortcut_sum_mean_median(fn, ...args) {
 }
 // Core
 // import * as exports from "./cut.js"
-const exports = { Array_filter, Array_find, Array_findIndex, Array_fromEntries, Array_group, Array_map, Array_max, Array_mean, Array_median, Array_min, Array_reduce, Array_sort, Array_sum, Array_unique, CURRENCIES, DAYS, Date_end, Date_format, Date_getLastDate, Date_getQuarter, Date_getTimezone, Date_getWeek, Date_minus, Date_modify, Date_parse, Date_plus, Date_relative, Date_setTimezone, Date_start, Function_debounce, Function_decorate, Function_every, Function_memoize, Function_partial, Function_promisify, Function_throttle, Function_wait, MONTHS, NUMBER_REGEX, NUMBER_WORDS, Number_duration, Number_format, Object_entries, Object_filter, Object_find, Object_findIndex, Object_keys, Object_map, Object_reduce, Object_values, RegExp_escape, RegExp_minus, RegExp_plus, RegExp_replace, String_format, String_words, TIMES, access, compare, equal, is, shortcut_filter_find_findIndex, shortcut_map, shortcut_sort, shortcut_sum_mean_median, shortcut_unique_min_max, transform }
+const exports = { Array_filter, Array_find, Array_findIndex, Array_fromEntries, Array_group, Array_map, Array_max, Array_mean, Array_median, Array_min, Array_reduce, Array_sort, Array_sum, Array_unique, CURRENCIES, DAYS, Date_end, Date_format, Date_getLastDate, Date_getQuarter, Date_getTimezone, Date_getWeek, Date_minus, Date_modify, Date_parse, Date_plus, Date_relative, Date_setTimezone, Date_start, Function_debounce, Function_decorate, Function_every, Function_memoize, Function_partial, Function_promisify, Function_throttle, Function_wait, MONTHS, NUMBER_REGEX, NUMBER_WORDS, Number_duration, Number_format, Object_entries, Object_filter, Object_find, Object_findIndex, Object_keys, Object_map, Object_reduce, Object_values, RegExp_escape, RegExp_minus, RegExp_plus, RegExp_replace, String_duration, String_format, String_words, TIMES, access, compare, equal, is, shortcut_filter_find_findIndex, shortcut_map, shortcut_sort, shortcut_sum_mean_median, shortcut_unique_min_max, transform }
 const cut = { by: { name: exports, group: {}, constructor: {} } }
 const proto = import.meta.url.includes("proto")
 if (!globalThis.window) globalThis.window = globalThis

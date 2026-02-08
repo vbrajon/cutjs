@@ -1,9 +1,3 @@
-globalThis.window = globalThis
-// process.env.TZ = "America/Santiago" // UTC-3
-// process.env.TZ = "Atlantic/Azores" // UTC-1 with DST to UTC+0
-// process.env.TZ = "Europe/Paris" // UTC+1 with DST to UTC+2
-process.env.TZ = "Asia/Karachi" // UTC+5
-
 // SYNC TESTS
 const users = [
   { name: "John Doe", age: 29 },
@@ -14,7 +8,7 @@ const users = [
 const user = users[0]
 const str = "i_am:The\n1\tAND , Only."
 const date = new Date("2019-01-20T10:09:08")
-const offset = ((offset = date.getTimezoneOffset()) => `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`)()
+const offset = ((offset = new Date().getTimezoneOffset()) => `${offset > 0 ? "-" : "+"}${("0" + ~~Math.abs(offset / 60)).slice(-2)}:${("0" + Math.abs(offset % 60)).slice(-2)}`)()
 const mixed = [false, true, (x) => x, -1, 0, Infinity, [], { a: [{ b: 1 }] }, /a/gi, null, new Date("2020"), "a", undefined]
 const mixedClone = [false, true, (x) => x, -1, 0, Infinity, [], { a: [{ b: 1 }] }, /a/gi, null, new Date("2020"), "a", undefined]
 const testsSync = [
@@ -132,7 +126,17 @@ const testsSync = [
   ["Array.sort", users.map((v) => v.age), [1, 2, 0, 3].map((i) => users[i].age)],
   ["Array.sort", users.slice(), "age", [1, 2, 0, 3].map((i) => users[i])],
   ["Array.sort", users.slice(), "-age", [3, 0, 1, 2].map((i) => users[i])], //* desc string sort
-  ["Array.sort", users.slice(), ["age", "-name"], [{ name: "Janette Doe", age: 22 }, { name: "Jane Doe", age: 22 }, { name: "John Doe", age: 29 }, { name: "Johnny Doe", age: 71, birthdate: new Date("Feb 26, 1932") }]], //* multi-sort with desc
+  [
+    "Array.sort",
+    users.slice(),
+    ["age", "-name"],
+    [
+      { name: "Janette Doe", age: 22 },
+      { name: "Jane Doe", age: 22 },
+      { name: "John Doe", age: 29 },
+      { name: "Johnny Doe", age: 71, birthdate: new Date("Feb 26, 1932") },
+    ],
+  ], //* multi-sort with desc
   ["Array.sort", users.slice(), (v) => v.age, [1, 2, 0, 3].map((i) => users[i])],
   ["Array.sort", users.slice(), (a, b) => (a.age === b.age ? 0 : a.age > b.age ? 1 : -1), [1, 2, 0, 3].map((i) => users[i])],
   ["Array.sort", users.slice(), function() { return arguments[0].age === arguments[1].age ? 0 : arguments[0].age > arguments[1].age ? 1 : -1 }, [1, 2, 0, 3].map((i) => users[i])], // prettier-ignore
@@ -325,6 +329,48 @@ const testsSync = [
   ["Number.duration", 86400000 * 33, "1 month"],
   ["Number.duration", 86400000 * 400, "1 year"],
   ["Number.duration", 0, ""],
+  // short format
+  ["Number.duration", 500, "short", "500ms"],
+  ["Number.duration", -500, "short", "-500ms"],
+  ["Number.duration", 1000, "short", "1s"],
+  ["Number.duration", 10000, "short", "10s"],
+  ["Number.duration", 60000, "short", "1m"],
+  ["Number.duration", 3600000, "short", "1h"],
+  ["Number.duration", 86400000, "short", "1d"],
+  ["Number.duration", 604800000, "short", "1w"],
+  ["Number.duration", 86400000 * 33, "short", "1mo"],
+  ["Number.duration", 86400000 * 400, "short", "1y"],
+  ["Number.duration", 0, "short", ""],
+  // parse duration strings
+  ["String.duration", "100", 100],
+  ["String.duration", "1s", 1000],
+  ["String.duration", "1 second", 1000],
+  ["String.duration", "1 sec", 1000],
+  ["String.duration", "1m", 60000],
+  ["String.duration", "1 minute", 60000],
+  ["String.duration", "1 min", 60000],
+  ["String.duration", "1h", 3600000],
+  ["String.duration", "1 hour", 3600000],
+  ["String.duration", "1 hr", 3600000],
+  ["String.duration", "2d", 172800000],
+  ["String.duration", "2 days", 172800000],
+  ["String.duration", "3w", 1814400000],
+  ["String.duration", "1 week", 604800000],
+  ["String.duration", "1mo", 2592000000],
+  ["String.duration", "1 month", 2592000000],
+  ["String.duration", "1y", 31536000000],
+  ["String.duration", "1 year", 31536000000],
+  ["String.duration", "1 yr", 31536000000],
+  ["String.duration", "1.5h", 5400000],
+  ["String.duration", ".5h", 1800000],
+  ["String.duration", "-1h", -3600000],
+  ["String.duration", "-1.5h", -5400000],
+  ["String.duration", "-.5h", -1800000],
+  ["String.duration", "1   s", 1000],
+  ["String.duration", "1.5H", 5400000], //* case-insensitive
+  ["String.duration", "100ms", 100],
+  ["String.duration", "53 milliseconds", 53],
+  ["String.duration", "17 msecs", 17],
   ["Date.format", date, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, undefined, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, "", "2019-01-20T10:09:08" + offset],
@@ -345,7 +391,7 @@ const testsSync = [
   ["Date.format", date, "hour", "10 AM"],
   ["Date.format", date, "minute", "9"],
   ["Date.format", date, "second", "8"],
-  // ["Date.format", new Date("100000-01-01"), "YYYY-MM-DD hh:mm:ss Z", `100000-01-01 00:00:00 ${offset}`],
+  // ["Date.format", new Date("100000-01-01"), "YYYY-MM-DD hh:mm:ss Z", `100000-01-01 00:00 ${offset}`],
   // ["Date.format", new Date("0000-01-01"), "YYYY-MM-DD hh:mm:ss Z", "0000-01-01 04:28:12 +04:28"], // historical calendar adjustments
   // ["Date.format", new Date("-100000-01-01"), "YYYY-MM-DD hh:mm:ss Z", `-100000-01-01 04:28:12 +04:28`],
   // ["Date.format", new Date("100000-01-01"), "YYYY-MM-DD", `100000-01-01`],
@@ -358,36 +404,36 @@ const testsSync = [
   ["Date.format", new Date("Invalid"), "YYYY/MM/DD", "-"],
   // https://sugarjs.com/dates/
   // https://github.com/tj/go-naturaldate/blob/master/naturaldate_test.go
-  // ["Date.parse", new Date(), "2020-Q2-02", new Date("2020-04-02T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "now", new Date("2000-01-01T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "today", new Date("2000-01-01T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday", new Date("1999-12-31T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "tomorrow", new Date("2000-01-02T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "1 hour ago", new Date("1999-12-31T23:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "1 hour from now", new Date("2000-01-01T01:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "in one hour, two minutes and thirty-four seconds", new Date("2000-01-01T01:02:34")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "in two hours", new Date("2000-01-01T02:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "next hour", new Date("2000-01-01T01:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "last hour", new Date("1999-12-31T23:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "today 3pm", new Date("2000-01-01T15:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "yesterday at 3pm", new Date("1999-12-31T15:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "at 3pm", new Date("2000-01-01T15:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "4:45", new Date("2000-01-01T04:45:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "6:30:15pm in three days", new Date("2000-01-04T18:30:15")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "the 15th at 3pm", new Date("2000-01-15T15:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "next Tuesday", new Date("2000-01-04T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "last Sunday", new Date("1999-12-26T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "december 2nd", new Date("2000-12-02T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "the 4th of July", new Date("2000-07-04T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "last 7th of July at 4pm", new Date("1999-07-07T16:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "first Monday of July", new Date("2000-07-03T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "15th Monday of July", new Date("2000-07-17T00:00:00")], // NOTE: error would be better than this illogic result for this illogical input
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "half an hour ago", new Date("1999-12-31T23:30:00")],
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "end of February", new Date("2000-02-29T00:00:00")],
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "8am PST", new Date("2000-01-01T" + offset)], // NOTE: UTC-7
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "8am CST", new Date("2000-01-01T" + offset)], // NOTE: UTC+8
-  // ["Date.parse", new Date("2000-01-01T00:00:00"), "18 Mar 2016", new Date("2016-03-18T00:00:00")],
-  ["Date.parse", new Date("2000-01-01T00:00:00"), "should throw an error at random string §@, but does nothing instead", new Date("2000-01-01T00:00:00")],
+  // ["Date.parse", new Date(), "2020-Q2-02", new Date("2020-04-02T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "now", new Date("2000-01-01T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "today", new Date("2000-01-01T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "yesterday", new Date("1999-12-31T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "tomorrow", new Date("2000-01-02T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "1 hour ago", new Date("1999-12-31T23:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "1 hour from now", new Date("2000-01-01T01:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "in one hour, two minutes and thirty-four seconds", new Date("2000-01-01T01:02:34")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "in two hours", new Date("2000-01-01T02:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "next hour", new Date("2000-01-01T01:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "last hour", new Date("1999-12-31T23:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "today 3pm", new Date("2000-01-01T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "yesterday at 3pm", new Date("1999-12-31T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "at 3pm", new Date("2000-01-01T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "4:45", new Date("2000-01-01T04:45:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "6:30:15pm in three days", new Date("2000-01-04T18:30:15")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "the 15th at 3pm", new Date("2000-01-15T15:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "next Tuesday", new Date("2000-01-04T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "last Sunday", new Date("1999-12-26T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "december 2nd", new Date("2000-12-02T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "the 4th of July", new Date("2000-07-04T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "last 7th of July at 4pm", new Date("1999-07-07T16:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "first Monday of July", new Date("2000-07-03T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "15th Monday of July", new Date("2000-07-17T00:00")], // NOTE: error would be better than this illogic result for this illogical input
+  // ["Date.parse", new Date("2000-01-01T00:00"), "half an hour ago", new Date("1999-12-31T23:30:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00"), "end of February", new Date("2000-02-29T00:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00"), "8am PST", new Date("2000-01-01T" + offset)], // NOTE: UTC-7
+  // ["Date.parse", new Date("2000-01-01T00:00"), "8am CST", new Date("2000-01-01T" + offset)], // NOTE: UTC+8
+  // ["Date.parse", new Date("2000-01-01T00:00"), "18 Mar 2016", new Date("2016-03-18T00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "should throw an error at random string §@, but does nothing instead", new Date("2000-01-01T00:00")],
   ["Date.getWeek", new Date("2016-11-05T00:00"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month
   ["Date.getWeek", new Date("2000-01-01T00:00"), 52], // Saturday, Leep year
   ["Date.getWeek", new Date("2000-01-02T00:00"), 52],
@@ -424,21 +470,21 @@ const testsSync = [
   ["Date.setTimezone", new Date("2000-01-02T00:00" + offset.replace(/./, (m) => (m === "+" ? "-" : "+"))), "-05:00", new Date("2000-01-01T19:00:00Z")],
   // ["Date.setTimezone", new Date("2000-01-01T00:00"), "Europe/Paris", new Date("2000-01-01T00:00")],
   // new Date("2000").plus("3 millisecond") //= new Date("2000-01-01T00:00:01.003Z")
-  ["Date.plus", new Date("2000-01-01"), { milliseconds: 3 }, new Date("2000-01-01T00:00:00.003Z")],
-  ["Date.plus", new Date("2000-01-01"), { days: 1 }, new Date("2000-01-02T00:00:00Z")],
-  ["Date.plus", new Date("2000-01-01"), { weeks: 1 }, new Date("2000-01-08T00:00:00Z")],
-  ["Date.plus", new Date("2000-01-01"), { quarters: 1 }, new Date("2000-04-01T00:00:00Z")],
-  ["Date.plus", new Date("2000-01-01"), { months: 3 }, new Date("2000-04-01T00:00:00Z")],
-  ["Date.plus", new Date("2000-01-01"), { months: 300 }, new Date("2025-01-01T00:00:00Z")],
-  ["Date.plus", new Date("2020-01-01"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03Z")],
-  ["Date.plus", new Date("2020-01-01"), "+1 year +1 month +1 hour +2 minute -3 seconds", new Date("2021-02-01T01:01:57Z")], //! DEPRECATED syntax
+  ["Date.plus", new Date("2000-01-01T00:00"), { milliseconds: 3 }, new Date("2000-01-01T00:00:00.003")],
+  ["Date.plus", new Date("2000-01-01T00:00"), { days: 1 }, new Date("2000-01-02T00:00")],
+  ["Date.plus", new Date("2000-01-01T00:00"), { weeks: 1 }, new Date("2000-01-08T00:00")],
+  ["Date.plus", new Date("2000-01-01T00:00"), { quarters: 1 }, new Date("2000-04-01T00:00")],
+  ["Date.plus", new Date("2000-01-01T00:00"), { months: 3 }, new Date("2000-04-01T00:00")],
+  ["Date.plus", new Date("2000-01-01T00:00"), { months: 300 }, new Date("2025-01-01T00:00")],
+  ["Date.plus", new Date("2020-01-01T00:00"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03")],
+  ["Date.plus", new Date("2020-01-01T00:00"), "+1 year +1 month +1 hour +2 minute -3 seconds", new Date("2021-02-01T01:01:57")], //! DEPRECATED syntax
   ["Date.plus", new Date("2018-11-30T00:00"), { months: 3 }, new Date("2019-02-28T00:00")],
   ["Date.plus", new Date("2018-12-31T00:00"), { months: 1 }, new Date("2019-01-31T00:00")],
   ["Date.plus", new Date("2020-01-01T00:00"), { months: 1 }, new Date("2020-02-01T00:00")],
   ["Date.plus", new Date("2020-01-31T00:00"), { months: 1 }, new Date("2020-02-29T00:00")],
   ["Date.plus", new Date("2020-01-31T00:00"), "month", new Date("2020-02-29T00:00")],
-  ["Date.plus", new Date("2020-02-29"), { months: 1 }, new Date("2020-03-29")], // NOTE: daylight saving time change
-  ["Date.plus", new Date("2020-03-31"), { months: -1 }, new Date("2020-02-29")], // NOTE: daylight saving time change
+  ["Date.plus", new Date("2020-02-29T00:00"), { months: 1 }, new Date("2020-03-29T00:00")], // NOTE: daylight saving time change
+  ["Date.plus", new Date("2020-03-31T00:00"), { months: -1 }, new Date("2020-02-29T00:00")], // NOTE: daylight saving time change
   ["Date.plus", new Date("2016-02-29T00:00"), { years: 1.2 }, new Date("2017-02-28T00:00")],
   ["Date.plus", new Date("2016-02-29T00:00"), { years: "1.2" }, new Date("2017-02-28T00:00")],
   ["Date.plus", new Date("2016-02-29T00:00"), null, new Date("2016-02-29T00:00")],
@@ -459,7 +505,7 @@ const testsSync = [
   ["Date.start", new Date("2018-02-28T04:05:00Z"), "month", new Date("2018-02-01T00:00")],
   ["Date.start", new Date("2020-03-31T12:00"), "month", new Date("2020-03-01T00:00")], // NOTE: daylight saving time change
   ["Date.start", new Date("2020-06-15T14:30:00"), "year", new Date("2020-01-01T00:00")],
-  ["Date.start", new Date("2020-06-15T14:30:45"), "day", new Date("2020-06-15T00:00:00")],
+  ["Date.start", new Date("2020-06-15T14:30:45"), "day", new Date("2020-06-15T00:00")],
   ["Date.start", new Date("2020-06-15T14:30:45"), "hour", new Date("2020-06-15T14:00:00")],
   ["Date.start", new Date("2020-06-15T14:30:45"), "minute", new Date("2020-06-15T14:30:00")],
   ["Date.start", new Date("2020-06-15T14:30:45.123"), "second", new Date("2020-06-15T14:30:45.000")],
@@ -578,12 +624,12 @@ const cutNormal = {
   versions: ["latest"],
   import: async (version) => {
     const module = await import("./cut")
-    const cut = module
+    const cut = module.default
     const fns = {}
-    for (const fname in cut) {
-      for (const cname in cut[fname]) {
-        fns[fname] = fns[`Generic.${fname}`] = fns[`${cname}.${fname}`] = cut[fname]
-        // fns[`${cname}.${fname}`] = cut[fname][cname] // INTERNAL METHODS
+    for (const cname in cut.by.constructor) {
+      if (cname === "shortcut") continue
+      for (const fname in cut.by.constructor[cname]) {
+        if (cut[fname] instanceof Function) fns[`${cname}.${fname}`] = fns[fname] = cut[fname][cname] || cut[fname]
       }
     }
     return fns
@@ -816,174 +862,9 @@ const testsProto = [testNormal, testSetup, testCleanup, testWrap]
 // const versionList = async (pkg) => Object.keys((await (await fetch(registry + pkg)).json()).versions).reverse()
 
 // NORMAL
-const packages = [cutNormal, lodash, vanilla]
-const tests = [...testsSync, ...testsAsync]
+export const packages = [cutNormal, lodash, vanilla]
+export const tests = [...testsSync, ...testsAsync]
 
 // // PROTO
 // const packages = [cutProto, lodash, vanilla]
 // const tests = [...testsSync, ...testsAsync, ...testsProto]
-
-// TEST RUNNER
-import { test, expect } from "bun:test"
-
-let name
-let i = 0
-// for (const file of files) {
-//   const { packages, default: tests } = await import("./" + file)
-for (const pkg of packages) {
-  for (const version of pkg.versions) {
-    const module = await pkg.import(version)
-    for (const t of tests) {
-      if (t instanceof Array) {
-        i = name !== t[0] ? 1 : i + 1
-        name = t[0].split(" - ")[0]
-        const fn = module[name]
-        if (!fn) continue // test.skip
-        test(`${pkg.name} ${t[0]} #${i}`, async () => {
-          const result = await fn(...t.slice(1, -1))
-          expect(result).toEqual(t.at(-1))
-        })
-      } else {
-        i = name !== t.name ? 1 : i + 1
-        name = t.name.split(" - ")[0]
-        const fn = module[name]
-        if (!fn) continue // test.skip
-        test(`${pkg.name} ${t.name} #${i}`, async () => {
-          const result = await t.fn(module)
-          expect(result).toEqual(t.output)
-        })
-      }
-    }
-  }
-}
-// }
-
-// PROPERTY TESTS
-// import { test, expect } from "bun:test"
-import fc from "fast-check"
-import { access, equal, is, format, parse } from "./cut.js"
-import { isEqual } from "lodash-es"
-
-// fc.configureGlobal({ numRuns: 5000 })
-
-const any = fc.anything({
-  withBigInt: true,
-  withBoxedValues: true,
-  withDate: true,
-  withMap: true,
-  withNullPrototype: true,
-  withObjectString: true,
-  withSet: true,
-  withTypedArray: true,
-  withSparseArray: true,
-  withUnicodeString: true,
-})
-
-// Throw only if the property fails
-function assert(...args) {
-  const fn = args.at(-1)
-  const property = fc.property(...args.slice(0, -1), (...inner) => (fn(...inner), true))
-  fc.assert(property)
-}
-// Throw if the property fails or returns falsy
-function assertTrue(...args) {
-  fc.assert(fc.property(...args))
-}
-function assertAsync(...args) {
-  fc.assert(fc.asyncProperty(...args))
-}
-function assertThrows(...args) {
-  const fn = args.at(-1)
-  const property = fc.property(...args.slice(0, -1), (...inner) => {
-    let threw = false
-    try {
-      fn(...inner)
-    } catch (e) {
-      threw = true
-    }
-    if (!threw) throw new Error("Did not throw")
-  })
-  fc.assert(property)
-}
-
-test("access does not throw for any properties", () => {
-  access({}, { toString: null })
-  access({}, [{ toString: null }])
-  assert(any, any, (a, b) => access(a, b))
-})
-
-test("equal is always true for clones", () => {
-  assertTrue(fc.clone(any, 2), ([a, b]) => equal(a, b))
-})
-
-const _any = fc.anything({
-  withBigInt: true,
-  withBoxedValues: true,
-  withDate: true,
-  // withMap: true,
-  // withNullPrototype: true,
-  withObjectString: true,
-  // withSet: true,
-  withTypedArray: true,
-  // withSparseArray: true,
-  withUnicodeString: true,
-})
-test("equal is similar to lodash.isEqual", () => {
-  if (!equal([{ __proto__: null }], [{ __proto__: null }])) throw "x"
-  if (equal({ __proto__: null }, {})) throw "x" // != lodash
-  if (equal({ "": undefined }, { a: undefined })) throw "x"
-  // if (equal([], [,])) throw "x"
-  // if (equal(new Map([["a", 1]]), new Map([["b", 2]]))) throw "x"
-  assert(_any, _any, (a, b) => {
-    if (equal(a, b) !== isEqual(a, b)) throw new Error("Not similar to lodash isEqual")
-  })
-})
-
-test("is does not throw for any properties", () => {
-  is(0n, null)
-  is({ __proto__: null }, null)
-  assert(any, any, (a, b) => {
-    is(a)
-    is(a, b)
-  })
-})
-
-test("is is always true for clones", () => {
-  assertTrue(fc.clone(any, 2), ([a, b]) => is(a) === is(b))
-})
-
-test("is returns the correct type", () => {
-  // if (!is(BigInt, 0n)) throw "x" // TODO: the reverse works is(0n, BigInt)
-  assert(fc.bigInt(), (a) => is(a, BigInt))
-  assert(fc.boolean(), (a) => is(a, Boolean))
-  assert(fc.date(), (a) => is(a, Date))
-  assert(fc.float(), (a) => is(a, Number))
-  assert(fc.string(), (a) => is(a, String))
-  assert(fc.tuple(), (a) => is(a, Array))
-  assert(fc.func(fc.nat()), (a) => is(a, Function)) // NOTE: does not work with fc.func()
-  assert(fc.infiniteStream(), (a) => is(a, Iterator))
-  assertAsync(fc.infiniteStream(), async (a) => is(a) === "Iterator") // TODO: fix is(a, Iterator)
-  assert(fc.object(), (a) => is(a, Object))
-  assert(fc.int8Array(), (a) => is(a, Int8Array))
-})
-
-test("format does not throw for any String, Number or Date", () => {
-  // format(0n) // TODO: BigInt, cut.Number.format supports it but cut.format does not
-  const strnumdate = fc.oneof(fc.string(), fc.float(), fc.date(), fc.bigInt())
-  assert(strnumdate, (a) => format(a))
-})
-
-test("format throw for anything else than String, Number or Date", () => {
-  const notstrnumdate = any.filter((a) => ![String, Number, BigInt, Date].includes(a?.constructor))
-  assertThrows(notstrnumdate, (a) => format(a))
-})
-
-test("format always returns a string", () => {
-  const strnumdate = fc.oneof(fc.string(), fc.float(), fc.date(), fc.bigInt())
-  assertTrue(strnumdate, (a) => typeof format(a) === "string")
-})
-
-test("parse does not throw for any String", () => {
-  const d = new Date()
-  assert(fc.string(), (a) => parse(d, a))
-})
