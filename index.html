@@ -42,6 +42,8 @@
     if (typeof v === "string") return JSON.stringify(v)
     if (v instanceof Date) return +new Date(cut.format(v)) ? `new Date("${cut.format(v)}")` : `new Date(${+v})`
     if (v instanceof RegExp) return v.toString()
+    if (v instanceof Map) return `new Map(${stringify([...v])})`
+    if (v instanceof Set) return `new Set(${stringify([...v])})`
     for (const constructor of [Array, BigInt, Boolean, Date, Error, Function, Number, Object, RegExp, String, Symbol]) {
       if (v === constructor) return `${constructor.name}`
     }

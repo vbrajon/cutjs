@@ -10,27 +10,36 @@ export const TIMES = [
   { name: "month", ms: 1000 * 60 * 60 * 24 * 30, token: "M", getter: "Month", pad: 2, aliases: ["mo"] },
   { name: "quarter", ms: 1000 * 60 * 60 * 24 * 30 * 3, token: "Q", getter: "Quarter", pad: 2, aliases: ["q"] },
   { name: "year", ms: 1000 * 60 * 60 * 24 * 365, token: "Y", getter: "FullYear", pad: 4, aliases: ["y", "yr", "yrs"] },
-  { name: "timezone", ms: null, token: "Z", getter: "Timezone" },
+  { name: "timezone", token: "Z", getter: "Timezone" },
 ]
-const units = TIMES.filter((t) => ["millisecond", "second", "minute", "hour", "day", "month", "year"].includes(t.name))
-TIMES.forEach((t) => {
+TIMES.forEach((t, i) => {
   TIMES[t.name.toUpperCase()] = t.ms
+  if (!t.ms) return
+  if (t.name === "week") {
+    t["+"] = (d, n) => d.setDate(d.getDate() + n * 7)
+    t["-"] = (d, n) => d.setDate(d.getDate() - n * 7)
+    t["<"] = (d) => (d.setDate(d.getDate() - ((d.getDay() + 6) % 7)), d.setHours(0, 0, 0, 0))
+    t[">"] = (d) => (d.setDate(d.getDate() + ((7 - d.getDay()) % 7)), d.setHours(23, 59, 59, 999))
+    return
+  }
+  if (t.name === "quarter") {
+    t["+"] = (d, n) => d.setMonth(d.getMonth() + n * 3)
+    t["-"] = (d, n) => d.setMonth(d.getMonth() - n * 3)
+    t["<"] = (d) => (d.setMonth(Math.floor(d.getMonth() / 3) * 3, 1), d.setHours(0, 0, 0, 0))
+    t[">"] = (d) => (d.setMonth(Math.ceil((d.getMonth() + 1) / 3) * 3, 0), d.setHours(23, 59, 59, 999))
+    return
+  }
+  const below = TIMES.slice(0, i).filter((t) => !["week", "quarter"].includes(t.name))
+  const belowReversed = [...below].reverse()
   t["+"] = (d, n) => d[`set${t.getter}`](d[`get${t.getter}`]() + n)
   t["-"] = (d, n) => d[`set${t.getter}`](d[`get${t.getter}`]() - n)
-  t["<"] = (d) => units.slice(0, units.indexOf(t)).map((unit) => d[`set${unit.getter}`](unit.getter === "Date" ? 1 : 0))
-  t[">"] = (d) =>
-    units
-      .slice(0, units.indexOf(t))
-      .reverse()
-      .map((unit) => d[`set${unit.getter}`]({ Month: 11, Date: Date_getLastDate(d), Hours: 23, Minutes: 59, Seconds: 59, Milliseconds: 999 }[unit.getter]))
+  t["<"] = (d) => below.map((t) => d[`set${t.getter}`](t.getter === "Date" ? 1 : 0))
+  t[">"] = (d) => belowReversed.map((t) => d[`set${t.getter}`]({ Month: 11, Date: Date_getLastDate(d), Hours: 23, Minutes: 59, Seconds: 59, Milliseconds: 999 }[t.getter]))
 })
-const DURATION_UNITS = Object.fromEntries(TIMES.flatMap((t) => (t.ms ? [[t.name, t.ms], [t.name + "s", t.ms], ...t.aliases.map((a) => [a, t.ms])] : [])))
-const DURATION_REGEX = RegExp(
-  `^(-?\\d*\\.?\\d+)\\s*(${Object.keys(DURATION_UNITS)
-    .sort((a, b) => b.length - a.length)
-    .join("|")})?`,
-  "i",
-)
+const DURATION_MAP = TIMES.reduce((acc, t) => (t.ms && [t.name, t.name + "s", ...t.aliases].forEach((k) => (acc[k] = t)), acc), {})
+const DURATION_KEYS = Object.keys(DURATION_MAP).sort((a, b) => b.length - a.length)
+const DURATION_REGEX = RegExp(`(-?\\d*\\.?\\d+)\\s*(${DURATION_KEYS.join("|")})`, "gi")
+const TIMES_REGEX = RegExp(`(?<![\\w])(${TIMES.flatMap((t) => (t.ms ? [t.name] : [])).join("|")})s?\\b`, "gi")
 export const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
 export const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 export const NUMBER_REGEX = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-?(one|two|three|four|five|six|seven|eight|nine))?\b/gi
@@ -48,9 +57,23 @@ export function equal(a, b) {
   if (a === b) return true
   if (a == null || b == null) return false
   if (a.constructor !== b.constructor) return false
-  if ({ Array: 1, Object: 1 }[Object.prototype.toString.call(a).slice(8, -1)]) {
+  if (a instanceof Map || a instanceof Set) {
+    if (a.size !== b.size) return false
+    const ae = [...a]
+    const be = [...b]
+    const used = new Set()
+    return ae.every((v) => {
+      const i = be.findIndex((v2, j) => !used.has(j) && equal(v, v2))
+      return i !== -1 && (used.add(i), true)
+    })
+  }
+  if (a instanceof Array) {
+    if (a.length !== b.length) return false
+    return a.every((v, i) => equal(v, b[i]))
+  }
+  if (Object.prototype.toString.call(a).slice(8, -1) === "Object") {
     if (Object.keys(a).length !== Object.keys(b).length) return false
-    return Object.keys(a).every((k) => (k || Object.hasOwn(b, k)) && equal(a[k], b[k]))
+    return Object.keys(a).every((k) => Object.hasOwn(b, k) && equal(a[k], b[k]))
   }
   return a.toString() === b.toString()
 }
@@ -189,11 +212,9 @@ export function Number_duration(num, format) {
   return `${n} ${unit.name}${Math.abs(n) > 1 ? "s" : ""}`
 }
 export function String_duration(str) {
-  const match = DURATION_REGEX.exec(str)
-  if (!match) return NaN
-  const n = +match[1]
-  const unit = (match[2] || "ms").toLowerCase()
-  return n * (DURATION_UNITS[unit] ?? NaN)
+  const matches = [...str.matchAll(DURATION_REGEX)]
+  if (!matches.length) return +str || NaN
+  return matches.reduce((total, match) => total + +match[1] * DURATION_MAP[match[2].toLowerCase()].ms, 0)
 }
 export function Date_relative(from, to = new Date()) {
   return Number_duration(+from - +to).replace(/^-?(.+)/, (m, d) => d + (m[0] === "-" ? " ago" : " from now"))
@@ -204,7 +225,7 @@ export function Date_parse(from, str) {
   str = str.replace(/tomorrow/i, "next day").replace(/yesterday/i, "last day")
   str = str.replace(NUMBER_REGEX, (match, tens, ones) => NUMBER_WORDS[match.toLowerCase()] || NUMBER_WORDS[tens.toLowerCase()] + (ones ? NUMBER_WORDS[ones.toLowerCase()] : 0))
   str = str.replace(RegExp(`(${MONTHS.join("|")})`, "i"), (m) => ((from = Date_plus(Date_start(from, "year"), { months: MONTHS.indexOf(m.toLowerCase()) - (/last/.test(str) ? 12 : 0) })), ""))
-  str = str.replace(RegExp(`(${DAYS.join("|")})`, "i"), (m) => ((from = Date_plus(Date_start(from, "week"), { days: 1 + DAYS.indexOf(m.toLowerCase()) - (/last/.test(str) ? 7 : 0) })), ""))
+  str = str.replace(RegExp(`(${DAYS.join("|")})`, "i"), (m) => ((from = Date_plus(Date_start(from, "day"), { days: 1 + DAYS.indexOf(m.toLowerCase()) - (/last/.test(str) ? 7 : 0) })), ""))
   str = str.replace(/(\d+)(st|nd|rd|th)/i, (_, num) => ((from = Date_plus(Date_start(from, "day"), { days: num - 1 })), ""))
   str = str.replace(/(\d+):?(\d+)?:?(\d+)?(am|pm)?/i, (_, hours = 0, minutes = 0, seconds = 0, ampm) => ((hours && minutes) || ampm ? ((from = Date_plus(Date_start(from, "day"), { hours: +hours + (ampm === "pm" ? 12 : 0), minutes, seconds })), "") : _))
   return Date_modify(from, str, /(last|ago)/.test(str) ? "-" : "+")
@@ -213,13 +234,16 @@ export function Date_modify(date, options, sign) {
   if (!options || !sign) return date
   if (typeof options === "string") {
     options = { str: options }
-    options.str.replace(RegExp(`([+-.\\d]*)\\s*(${TIMES.flatMap((t) => (t.ms ? [t.name] : [])).join("|")})`, "gi"), (m, n, u) => (options[`${u}s`] = +n || 1 - +(n === "0")))
+    for (const match of options.str.matchAll(TIMES_REGEX)) {
+      options[`${match[1].toLowerCase()}s`] = 1
+    }
+    for (const match of options.str.matchAll(DURATION_REGEX)) {
+      options[`${DURATION_MAP[match[2].toLowerCase()].name}s`] = +match[1]
+    }
   }
-  if (options.weeks) options.days = options.days || 0 + options.weeks * 7
-  if (options.quarters) options.months = options.months || 0 + options.quarters * 3
   Object.keys(options).forEach((k) => (options[k] = Math.round(+options[k]) || options[k]))
   const d = new Date(date)
-  units.forEach((unit) => options[`${unit.name}s`] && unit[sign](d, options[`${unit.name}s`]))
+  TIMES.forEach((t) => options[`${t.name}s`] && t[sign]?.(d, options[`${t.name}s`]))
   if (["-", "+"].includes(sign) && date.getDate() !== d.getDate() && ["year", "month"].some((k) => options[`${k}s`]) && !["day", "hour", "minute", "second", "millisecond"].some((k) => options[`${k}s`])) d.setDate(0)
   return d
 }

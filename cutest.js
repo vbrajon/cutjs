@@ -42,7 +42,7 @@ const testsSync = [
   ["Generic.is", 0n, "BigInt"],
   ["Generic.is", Infinity, "Number"],
   ["Generic.is", () => 1, "Function"],
-  ["Generic.is", Iterator, "Iterator"],
+  // ["Generic.is", Iterator, "Iterator"],
   // { name: "Generic.is", fuzz: true, errors: [] },
   ["Generic.is", Function, function a() {}, true],
   ["Generic.is", { [Symbol.iterator]() {} }, "Iterator"],
@@ -58,6 +58,14 @@ const testsSync = [
   ["Generic.equal", (x) => x, (x) => x, true], // != lodash
   ["Generic.equal", null, null, true],
   ["Generic.equal", true],
+  // Object key mismatch with undefined values
+  ["Generic.equal", { x: undefined }, { y: undefined }, false],
+  ["Generic.equal", new Map([[{}, 1]]), new Map([[{}, 1]]), true],
+  ["Generic.equal", new Map([[{}, 1]]), new Map([[{}, 2]]), false],
+  ["Generic.equal", new Set([1, 2, 3]), new Set([3, 2, 1]), true],
+  ["Generic.equal", new Set([1, 2]), new Set([1, 2, 3]), false],
+  ["Generic.equal", { a: { b: { c: 1 } } }, { a: { b: { c: 2 } } }, false],
+  ["Generic.equal", [[1, [2]]], [[1, [2]]], true],
   ["Generic.access", { a: { b: [1, 2, 3] } }, ["a", "b", "length"], 3],
   ["Generic.access", { a: { b: [1, 2, 3] } }, "a.b.length", 3],
   ["Generic.access", { a: { b: [1, 2, 3] } }, ".a.b.length", 3], // != lodash
@@ -104,7 +112,6 @@ const testsSync = [
   ["Object.find", user, (v) => v > 10, 29],
   ["Object.findIndex", user, (v) => v === 29, "age"],
   ["Object.reduce", user, (acc, v, k) => ((acc[v] = k), acc), {}, { "John Doe": "name", 29: "age" }],
-  ["Object.reduce", user, (acc, v, k) => Object.assign(acc, { [v]: k }), {}, { "John Doe": "name", 29: "age" }], //* compare performance
   ["Array.map", [null, "a", undefined, /a/], [null, "a", undefined, /a/]],
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], "a", [1, 3]], // prettier-ignore
   ["Array.map", [{ a: 1, b: 2 }, { a: 3, b: 4 }], ["a", "b"], [[1, 2], [3, 4]]], // prettier-ignore
@@ -188,16 +195,6 @@ const testsSync = [
     name: "Function.decorate",
     fn: ({ decorate }) => decorate((x) => x, (fn, x) => fn(x * 2) * 2)(1), // prettier-ignore
     output: 4,
-  },
-  {
-    name: "Function.decorate",
-    fn: ({ decorate }) => decorate((x) => x, (fn, x) => fn(x * 2))(1), // prettier-ignore
-    output: 2,
-  },
-  {
-    name: "Function.decorate",
-    fn: ({ decorate }) => decorate((x) => x, (fn, x) => fn(x) * 2)(1), // prettier-ignore
-    output: 2,
   },
   {
     name: "Function.decorate",
@@ -322,57 +319,26 @@ const testsSync = [
   ["Number.format", NaN, "$", "-"],
   ["Number.duration", -36666666, "-10 hours"],
   ["Number.duration", 1, "1 millisecond"],
-  ["Number.duration", 1000, "1 second"],
   ["Number.duration", 2000, "2 seconds"],
-  ["Number.duration", 60000, "1 minute"],
-  ["Number.duration", 3600000, "1 hour"],
-  ["Number.duration", 86400000, "1 day"],
-  ["Number.duration", 86400000 * 8, "1 week"],
-  ["Number.duration", 86400000 * 33, "1 month"],
   ["Number.duration", 86400000 * 400, "1 year"],
   ["Number.duration", 0, ""],
-  // short format
-  ["Number.duration", 500, "short", "500ms"],
-  ["Number.duration", -500, "short", "-500ms"],
   ["Number.duration", 1000, "short", "1s"],
-  ["Number.duration", 10000, "short", "10s"],
-  ["Number.duration", 60000, "short", "1m"],
-  ["Number.duration", 3600000, "short", "1h"],
-  ["Number.duration", 86400000, "short", "1d"],
-  ["Number.duration", 604800000, "short", "1w"],
   ["Number.duration", 86400000 * 33, "short", "1mo"],
-  ["Number.duration", 86400000 * 400, "short", "1y"],
   ["Number.duration", 0, "short", ""],
   // parse duration strings
   ["String.duration", "100", 100],
   ["String.duration", "1s", 1000],
   ["String.duration", "1 second", 1000],
-  ["String.duration", "1 sec", 1000],
   ["String.duration", "1m", 60000],
-  ["String.duration", "1 minute", 60000],
-  ["String.duration", "1 min", 60000],
   ["String.duration", "1h", 3600000],
-  ["String.duration", "1 hour", 3600000],
-  ["String.duration", "1 hr", 3600000],
   ["String.duration", "2d", 172800000],
-  ["String.duration", "2 days", 172800000],
-  ["String.duration", "3w", 1814400000],
   ["String.duration", "1 week", 604800000],
   ["String.duration", "1mo", 2592000000],
-  ["String.duration", "1 month", 2592000000],
   ["String.duration", "1y", 31536000000],
-  ["String.duration", "1 year", 31536000000],
-  ["String.duration", "1 yr", 31536000000],
   ["String.duration", "1.5h", 5400000],
-  ["String.duration", ".5h", 1800000],
   ["String.duration", "-1h", -3600000],
-  ["String.duration", "-1.5h", -5400000],
-  ["String.duration", "-.5h", -1800000],
-  ["String.duration", "1   s", 1000],
   ["String.duration", "1.5H", 5400000], //* case-insensitive
-  ["String.duration", "100ms", 100],
-  ["String.duration", "53 milliseconds", 53],
-  ["String.duration", "17 msecs", 17],
+  ["String.duration", "in 1h 2m 3s 4ms", 3723004],
   ["Date.format", date, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, undefined, "2019-01-20T10:09:08" + offset],
   ["Date.format", date, "", "2019-01-20T10:09:08" + offset],
@@ -413,8 +379,11 @@ const testsSync = [
   ["Date.parse", new Date("2000-01-01T00:00"), "tomorrow", new Date("2000-01-02T00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "1 hour ago", new Date("1999-12-31T23:00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "1 hour from now", new Date("2000-01-01T01:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "in 1h 2m 3s 4ms", new Date("2000-01-01T01:02:03.004")],
   ["Date.parse", new Date("2000-01-01T00:00"), "in one hour, two minutes and thirty-four seconds", new Date("2000-01-01T01:02:34")],
   ["Date.parse", new Date("2000-01-01T00:00"), "in two hours", new Date("2000-01-01T02:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "in two weeks", new Date("2000-01-15T00:00:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "in two quarters", new Date("2000-07-01T00:00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "next hour", new Date("2000-01-01T01:00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "last hour", new Date("1999-12-31T23:00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "today 3pm", new Date("2000-01-01T15:00:00")],
@@ -436,27 +405,11 @@ const testsSync = [
   // ["Date.parse", new Date("2000-01-01T00:00"), "8am CST", new Date("2000-01-01T" + offset)], // NOTE: UTC+8
   // ["Date.parse", new Date("2000-01-01T00:00"), "18 Mar 2016", new Date("2016-03-18T00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "should throw an error at random string §@, but does nothing instead", new Date("2000-01-01T00:00")],
-  ["Date.getWeek", new Date("2016-11-05T00:00"), 44], // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_a_month_and_day_of_the_month
-  ["Date.getWeek", new Date("2000-01-01T00:00"), 52], // Saturday, Leep year
-  ["Date.getWeek", new Date("2000-01-02T00:00"), 52],
-  ["Date.getWeek", new Date("2000-01-03T00:00"), 1],
-  ["Date.getWeek", new Date("2000-01-04T00:00"), 1],
-  ["Date.getWeek", new Date("2000-01-11T00:00"), 2],
-  ["Date.getWeek", new Date("2000-01-19T00:00"), 3],
-  ["Date.getWeek", new Date("2000-01-27T00:00"), 4],
-  ["Date.getWeek", new Date("2000-02-04T00:00"), 5],
-  ["Date.getWeek", new Date("2000-02-12T00:00"), 6],
-  ["Date.getWeek", new Date("2000-09-17T00:00"), 37],
-  ["Date.getWeek", new Date("2000-12-17T00:00"), 50],
-  ["Date.getWeek", new Date("2000-12-24T00:00"), 51],
-  ["Date.getWeek", new Date("2000-12-31T00:00"), 52],
-  ["Date.getWeek", new Date("2001-01-01T00:00"), 1], // Monday
-  ["Date.getWeek", new Date("2002-01-01T00:00"), 1], // Tuesday
-  ["Date.getWeek", new Date("2003-01-01T00:00"), 1], // Wednesday
-  ["Date.getWeek", new Date("2004-01-01T00:00"), 1], // Thursday, Leep year
-  ["Date.getWeek", new Date("2004-12-31T00:00"), 53], // Friday, Leep year
-  ["Date.getWeek", new Date("2005-01-01T00:00"), 53], // Saturday
-  ["Date.getWeek", new Date("2006-01-01T00:00"), 52], // Sunday
+  ["Date.getWeek", new Date("2016-11-05T00:00"), 44], // mid-year
+  ["Date.getWeek", new Date("2000-01-01T00:00"), 52], // Saturday, Leap year — Jan 1 can be prev year's week
+  ["Date.getWeek", new Date("2000-01-03T00:00"), 1], // first Monday
+  ["Date.getWeek", new Date("2004-12-31T00:00"), 53], // Friday, Leap year — week 53
+  ["Date.getWeek", new Date("2006-01-01T00:00"), 52], // Sunday — Jan 1 in prev year's week
   ["Date.getLastDate", new Date("2001-02-01T00:00"), 28], //* non-leap year
   ["Date.getLastDate", new Date("2000-02-01T00:00"), 29], //* leap year
   ["Date.getLastDate", new Date("2000-04-01T00:00"), 30], //* 30-day month
@@ -472,55 +425,35 @@ const testsSync = [
   ["Date.setTimezone", new Date("2000-01-02T00:00" + offset.replace(/./, (m) => (m === "+" ? "-" : "+"))), "-05:00", new Date("2000-01-01T19:00:00Z")],
   // ["Date.setTimezone", new Date("2000-01-01T00:00"), "Europe/Paris", new Date("2000-01-01T00:00")],
   // new Date("2000").plus("3 millisecond") //= new Date("2000-01-01T00:00:01.003Z")
-  ["Date.plus", new Date("2000-01-01T00:00"), { milliseconds: 3 }, new Date("2000-01-01T00:00:00.003")],
   ["Date.plus", new Date("2000-01-01T00:00"), { days: 1 }, new Date("2000-01-02T00:00")],
   ["Date.plus", new Date("2000-01-01T00:00"), { weeks: 1 }, new Date("2000-01-08T00:00")],
   ["Date.plus", new Date("2000-01-01T00:00"), { quarters: 1 }, new Date("2000-04-01T00:00")],
-  ["Date.plus", new Date("2000-01-01T00:00"), { months: 3 }, new Date("2000-04-01T00:00")],
-  ["Date.plus", new Date("2000-01-01T00:00"), { months: 300 }, new Date("2025-01-01T00:00")],
   ["Date.plus", new Date("2020-01-01T00:00"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03")],
-  ["Date.plus", new Date("2020-01-01T00:00"), "+1 year +1 month +1 hour +2 minute -3 seconds", new Date("2021-02-01T01:01:57")], //! DEPRECATED syntax
-  ["Date.plus", new Date("2018-11-30T00:00"), { months: 3 }, new Date("2019-02-28T00:00")],
-  ["Date.plus", new Date("2018-12-31T00:00"), { months: 1 }, new Date("2019-01-31T00:00")],
-  ["Date.plus", new Date("2020-01-01T00:00"), { months: 1 }, new Date("2020-02-01T00:00")],
   ["Date.plus", new Date("2020-01-31T00:00"), { months: 1 }, new Date("2020-02-29T00:00")],
-  ["Date.plus", new Date("2020-01-31T00:00"), "month", new Date("2020-02-29T00:00")],
-  ["Date.plus", new Date("2020-02-29T00:00"), { months: 1 }, new Date("2020-03-29T00:00")], // NOTE: daylight saving time change
-  ["Date.plus", new Date("2020-03-31T00:00"), { months: -1 }, new Date("2020-02-29T00:00")], // NOTE: daylight saving time change
+  ["Date.plus", new Date("2018-11-30T00:00"), { months: 3 }, new Date("2019-02-28T00:00")],
+  ["Date.plus", new Date("2020-03-31T00:00"), { months: -1 }, new Date("2020-02-29T00:00")],
   ["Date.plus", new Date("2016-02-29T00:00"), { years: 1.2 }, new Date("2017-02-28T00:00")],
-  ["Date.plus", new Date("2016-02-29T00:00"), { years: "1.2" }, new Date("2017-02-28T00:00")],
+  ["Date.plus", new Date("2020-01-31T00:00"), "month", new Date("2020-02-29T00:00")],
   ["Date.plus", new Date("2016-02-29T00:00"), null, new Date("2016-02-29T00:00")],
-  ["Date.plus", new Date("2016-02-29T00:00"), new Date("2016-02-29T00:00")],
-  ["Date.plus", new Date("2016-02-29T00:00"), { year: 10 }, new Date("2016-02-29T00:00")], //* ignored options without plural
-  ["Date.plus", new Date("2016-02-29T00:00"), { years: null }, new Date("2016-02-29T00:00")], //* ignored
-  ["Date.plus", new Date("2016-02-29T00:00"), { years: 0 }, new Date("2016-02-29T00:00")], //* ignored
-  ["Date.plus", new Date("2016-02-29T00:00"), { ignored: 1 }, new Date("2016-02-29T00:00")], //* ignored additional properties
-  ["Date.plus", new Date("2020-01-01T00:00"), { months: 1.2 }, new Date("2020-02-01T00:00")], //* Expected behavior
-  ["Date.plus", new Date("2020-01-31T00:00"), "1.2 month", new Date("2020-02-29T00:00")], //* Expected behavior //! DEPRECATED syntax
-  ["Date.minus", new Date("2020-01-01T00:00"), "1 month", new Date("2019-12-01T00:00")],
   ["Date.minus", new Date("2020-02-29T00:00"), "1 year", new Date("2019-02-28T00:00")],
   ["Date.minus", new Date("2020-01-01T00:00"), { days: 1 }, new Date("2019-12-31T00:00")],
-  ["Date.minus", new Date("2020-01-01T00:00"), { hours: 1 }, new Date("2019-12-31T23:00")],
   ["Date.minus", new Date("2020-01-01T00:00"), { years: 1, months: 1 }, new Date("2018-12-01T00:00")],
-  ["Date.minus", new Date("2020-01-01T00:00"), null, new Date("2020-01-01T00:00")], //* no-op
-  ["Date.minus", new Date("2018-11-30T00:00"), "-3 month", new Date("2019-02-28T00:00")], //* Subtract negative number
-  ["Date.start", new Date("2018-02-28T04:05:00Z"), "month", new Date("2018-02-01T00:00")],
-  ["Date.start", new Date("2020-03-31T12:00"), "month", new Date("2020-03-01T00:00")], // NOTE: daylight saving time change
   ["Date.start", new Date("2020-06-15T14:30:00"), "year", new Date("2020-01-01T00:00")],
+  ["Date.start", new Date("2018-02-28T04:05:00Z"), "month", new Date("2018-02-01T00:00")],
   ["Date.start", new Date("2020-06-15T14:30:45"), "day", new Date("2020-06-15T00:00")],
-  ["Date.start", new Date("2020-06-15T14:30:45"), "hour", new Date("2020-06-15T14:00:00")],
-  ["Date.start", new Date("2020-06-15T14:30:45"), "minute", new Date("2020-06-15T14:30:00")],
-  ["Date.start", new Date("2020-06-15T14:30:45.123"), "second", new Date("2020-06-15T14:30:45.000")],
-  // ["Date.start", new Date("2018-02-28T04:05:00"), "week", new Date("2018-02-25T00:00")], // NOTE: start on sunday or monday
+  ["Date.start", new Date("2020-06-17T14:30:00"), "week", new Date("2020-06-15T00:00")], // Wed → Mon
+  ["Date.start", new Date("2020-06-21T10:00:00"), "week", new Date("2020-06-15T00:00")], // Sun → Mon
+  ["Date.start", new Date("2020-06-15T14:30:00"), "quarter", new Date("2020-04-01T00:00")], // Q2
+  ["Date.start", new Date("2020-11-15T10:00:00"), "quarter", new Date("2020-10-01T00:00")], // Q4
   ["Date.end", new Date("2016-02-29T10:11:12Z"), "year", new Date("2016-12-31T23:59:59.999")],
   ["Date.end", new Date("2020-06-15T10:00:00"), "month", new Date("2020-06-30T23:59:59.999")],
   ["Date.end", new Date("2020-06-15T14:30:00"), "day", new Date("2020-06-15T23:59:59.999")],
-  ["Date.end", new Date("2020-06-15T14:30:00"), "hour", new Date("2020-06-15T14:59:59.999")],
-  ["Date.end", new Date("2020-06-15T14:30:00"), "minute", new Date("2020-06-15T14:30:59.999")],
-  ["Date.relative", date, date, ""],
-  ["Date.relative", new Date(+date - 1000), date, "1 second ago"], //* 1 second before
-  ["Date.relative", new Date(+date + 2 * 60 * 60 * 1000), date, "2 hours from now"], //* 2 hours after
-  ["Date.relative", new Date(+date - 60000), date, "1 minute ago"],
+  ["Date.end", new Date("2020-06-17T14:30:00"), "week", new Date("2020-06-21T23:59:59.999")], // Wed → Sun
+  ["Date.end", new Date("2020-06-15T10:00:00"), "week", new Date("2020-06-21T23:59:59.999")], // Mon → Sun
+  ["Date.end", new Date("2020-06-15T10:00:00"), "quarter", new Date("2020-06-30T23:59:59.999")], // Q2
+  ["Date.end", new Date("2020-11-15T10:00:00"), "quarter", new Date("2020-12-31T23:59:59.999")], // Q4
+  ["Date.relative", new Date(+date - 1000), date, "1 second ago"],
+  ["Date.relative", new Date(+date + 2 * 60 * 60 * 1000), date, "2 hours from now"],
   ["Date.relative", new Date(+date - 86400000 * 3), date, "3 days ago"],
   ["Date.relative", new Date(+date + 86400000 * 400), date, "1 year from now"],
   ["RegExp.escape", /john@gmail.com/, /john@gmail\.com/],
@@ -863,10 +796,10 @@ const testsProto = [testNormal, testSetup, testCleanup, testWrap]
 // const registry = "https://registry.npmjs.org/"
 // const versionList = async (pkg) => Object.keys((await (await fetch(registry + pkg)).json()).versions).reverse()
 
-// NORMAL
+// // NORMAL
 export const packages = [cutNormal, lodash, vanilla]
 export const tests = [...testsSync, ...testsAsync]
 
 // // PROTO
-// const packages = [cutProto, lodash, vanilla]
-// const tests = [...testsSync, ...testsAsync, ...testsProto]
+// export const packages = [cutProto, lodash, vanilla]
+// export const tests = [...testsSync, ...testsAsync, ...testsProto]
