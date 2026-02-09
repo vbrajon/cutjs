@@ -70,9 +70,9 @@ import fc from "fast-check"
 import cut from "./cut.js"
 import lodash from "lodash-es"
 
-// fc.configureGlobal({ numRuns: 5000 })
+fc.configureGlobal({ numRuns: process.env.RUNS })
 
-const any = fc.anything({
+const anyOpts = {
   withBigInt: true,
   withBoxedValues: true,
   withDate: true,
@@ -83,7 +83,8 @@ const any = fc.anything({
   withTypedArray: true,
   withSparseArray: true,
   withUnicodeString: true,
-})
+}
+const any = fc.anything(anyOpts)
 
 // Throw only if the property fails
 function assert(...args) {
@@ -138,6 +139,7 @@ test("equal is always true for clones", () => {
 test("equal is similar to lodash.isEqual", () => {
   if (!cut.equal([{ __proto__: null }], [{ __proto__: null }])) throw "x"
   if (cut.equal({ __proto__: null }, {})) throw "x" // != lodash
+  const any = fc.anything({ ...anyOpts, withNullPrototype: false })
   assert(any, any, (a, b) => {
     if (cut.equal(a, b) !== lodash.isEqual(a, b)) throw new Error("Not similar to lodash isEqual")
   })
@@ -378,7 +380,7 @@ test("Date_plus and Date_minus are inverses for days", () => {
   const days = fc.integer({ min: 0, max: 1000 })
   assertTrue(validDate, days, (d, n) => {
     const result = cut.plus(cut.minus(d, { days: n }), { days: n })
-    return Math.abs(+result - +d) < 1000 // within 1 second (DST)
+    return Math.abs(+result - +d) <= 3600000 // within 1 hour (DST)
   })
 })
 

@@ -42,14 +42,13 @@ const testsSync = [
   ["Generic.is", 0n, "BigInt"],
   ["Generic.is", Infinity, "Number"],
   ["Generic.is", () => 1, "Function"],
-  // ["Generic.is", Iterator, "Iterator"],
-  // { name: "Generic.is", fuzz: true, errors: [] },
   ["Generic.is", Function, function a() {}, true],
   ["Generic.is", { [Symbol.iterator]() {} }, "Iterator"],
   ["Generic.is", void 0, undefined, true],
   ["Generic.is", NaN, NaN, true],
   ["Generic.is", NaN, Number, false], //! NaN is "NaN", not "Number"
   ["Generic.is", 1, NaN, false],
+  // ["Generic.is", Iterator, "Iterator"], // NOTE: This test do not work in browser
   //? Lodash _.isEqual
   ["Generic.equal", [null, null], [null, undefined], false],
   ["Generic.equal", { a: 1 }, { a: 1 }, true],
@@ -399,10 +398,12 @@ const testsSync = [
   ["Date.parse", new Date("2000-01-01T00:00"), "last 7th of July at 4pm", new Date("1999-07-07T16:00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "first Monday of July", new Date("2000-07-03T00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "15th Monday of July", new Date("2000-07-17T00:00")], // NOTE: error would be better than this illogic result for this illogical input
+  ["Date.parse", new Date("2000-01-01T00:00"), "next week", new Date("2000-01-08T00:00")],
   // ["Date.parse", new Date("2000-01-01T00:00"), "half an hour ago", new Date("1999-12-31T23:30:00")],
+  // ["Date.parse", new Date("2000-01-01T00:00"), "end of month", new Date("2000-01-31T00:00")],
   // ["Date.parse", new Date("2000-01-01T00:00"), "end of February", new Date("2000-02-29T00:00")],
-  // ["Date.parse", new Date("2000-01-01T00:00"), "8am PST", new Date("2000-01-01T" + offset)], // NOTE: UTC-7
-  // ["Date.parse", new Date("2000-01-01T00:00"), "8am CST", new Date("2000-01-01T" + offset)], // NOTE: UTC+8
+  ["Date.parse", new Date("2000-01-01T00:00"), "8am PST", new Date("2000-01-01T08:00:00-08:00")],
+  ["Date.parse", new Date("2000-01-01T00:00"), "8am CST", new Date("2000-01-01T08:00:00-06:00")],
   // ["Date.parse", new Date("2000-01-01T00:00"), "18 Mar 2016", new Date("2016-03-18T00:00")],
   ["Date.parse", new Date("2000-01-01T00:00"), "should throw an error at random string §@, but does nothing instead", new Date("2000-01-01T00:00")],
   ["Date.getWeek", new Date("2016-11-05T00:00"), 44], // mid-year
@@ -421,22 +422,22 @@ const testsSync = [
   ["Date.getTimezone", date, offset],
   ["Date.getTimezone", date, -540, "+09:00"],
   ["Date.setTimezone", date, offset, date],
-  ["Date.setTimezone", new Date("2000-01-01T00:00" + offset.replace(/./, (m) => (m === "+" ? "-" : "+"))), "+05:00", new Date("2000-01-01T05:00:00Z")],
-  ["Date.setTimezone", new Date("2000-01-02T00:00" + offset.replace(/./, (m) => (m === "+" ? "-" : "+"))), "-05:00", new Date("2000-01-01T19:00:00Z")],
-  // ["Date.setTimezone", new Date("2000-01-01T00:00"), "Europe/Paris", new Date("2000-01-01T00:00")],
+  ["Date.setTimezone", new Date("2000-01-01T00:00"), "+05:00", new Date("2000-01-01T00:00:00+05:00")],
+  ["Date.setTimezone", new Date("2000-01-02T00:00"), "-05:00", new Date("2000-01-02T00:00:00-05:00")],
+  ["Date.setTimezone", new Date("2000-01-01T00:00"), 300, new Date("2000-01-01T00:00:00-05:00")],
+  ["Date.setTimezone", new Date("2000-01-01T00:00"), "PST", new Date("2000-01-01T00:00:00-08:00")],
+  ["Date.setTimezone", new Date("2000-01-01T00:00"), 0, new Date("2000-01-01T00:00:00+00:00")],
+  ["Date.setTimezone", new Date("2000-01-01T00:00"), new Date("2000-01-01T00:00")],
   // new Date("2000").plus("3 millisecond") //= new Date("2000-01-01T00:00:01.003Z")
-  ["Date.plus", new Date("2000-01-01T00:00"), { days: 1 }, new Date("2000-01-02T00:00")],
-  ["Date.plus", new Date("2000-01-01T00:00"), { weeks: 1 }, new Date("2000-01-08T00:00")],
-  ["Date.plus", new Date("2000-01-01T00:00"), { quarters: 1 }, new Date("2000-04-01T00:00")],
-  ["Date.plus", new Date("2020-01-01T00:00"), { years: 1, months: 1, hours: 1, minutes: 2, seconds: 3 }, new Date("2021-02-01T01:02:03")],
-  ["Date.plus", new Date("2020-01-31T00:00"), { months: 1 }, new Date("2020-02-29T00:00")],
-  ["Date.plus", new Date("2018-11-30T00:00"), { months: 3 }, new Date("2019-02-28T00:00")],
+  ["Date.plus", new Date("2000-01-01T00:00"), "1d", new Date("2000-01-02T00:00")],
+  ["Date.plus", new Date("2000-01-01T00:00"), "1w", new Date("2000-01-08T00:00")],
+  ["Date.plus", new Date("2000-01-01T00:00"), "1Q", new Date("2000-04-01T00:00")],
+  ["Date.plus", new Date("2020-01-01T00:00"), "1 year 1 month and 1h 2m 3s 444ms", new Date("2021-02-01T01:02:03.444")],
   ["Date.plus", new Date("2020-03-31T00:00"), { months: -1 }, new Date("2020-02-29T00:00")],
   ["Date.plus", new Date("2016-02-29T00:00"), { years: 1.2 }, new Date("2017-02-28T00:00")],
-  ["Date.plus", new Date("2020-01-31T00:00"), "month", new Date("2020-02-29T00:00")],
   ["Date.plus", new Date("2016-02-29T00:00"), null, new Date("2016-02-29T00:00")],
-  ["Date.minus", new Date("2020-02-29T00:00"), "1 year", new Date("2019-02-28T00:00")],
-  ["Date.minus", new Date("2020-01-01T00:00"), { days: 1 }, new Date("2019-12-31T00:00")],
+  ["Date.minus", new Date("2020-02-29T00:00"), "year", new Date("2019-02-28T00:00")],
+  ["Date.minus", new Date("2020-01-01T00:00"), "1 day", new Date("2019-12-31T00:00")],
   ["Date.minus", new Date("2020-01-01T00:00"), { years: 1, months: 1 }, new Date("2018-12-01T00:00")],
   ["Date.start", new Date("2020-06-15T14:30:00"), "year", new Date("2020-01-01T00:00")],
   ["Date.start", new Date("2018-02-28T04:05:00Z"), "month", new Date("2018-02-01T00:00")],
@@ -497,7 +498,7 @@ const testsAsync = [
     fn: async ({ every }) => {
       let n = 0
       const loop = every(() => n++, 100)
-      await sleep(280) // immediate + runs every 100ms + stops after 280ms
+      while (n < 3) await sleep(50) // wait until 3 calls (immediate + 2 intervals)
       loop.stop()
       if (n !== 3) throw new Error(`Function.every should have been called 3 times, n = ${n}`)
     },

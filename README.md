@@ -99,6 +99,8 @@ const _fetch = fetch.decorate((fn, url, options) => {
 bun install --no-save fast-check lodash-es @js-temporal/polyfill
 bun test --watch --concurrent --coverage --only-failures
 bunx prettier --write .
+# For AI Agents:
+RUNS=10000 TZ="Europe/Paris" bun test --concurrent --only-failures
 ```
 
 ## Principles
